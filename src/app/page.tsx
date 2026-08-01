@@ -154,21 +154,32 @@ export default function HomeFeedPage() {
               </div>
             </div>
 
-            {/* Right Interactive Player Box */}
-            <div className="lg:col-span-5 relative group rounded-2xl overflow-hidden border border-white/10 bg-[#0B0C10] shadow-[0_0_50px_rgba(0,0,0,0.8)] shadow-[0_0_40px_rgba(255,214,10,0.15)]">
+            {/* Right Interactive Player Box (Hidden on Mobile/Tablet for clean layout, premium effects on Desktop) */}
+            <div className="hidden lg:block lg:col-span-5 relative group rounded-2xl overflow-hidden border border-white/10 hover:border-[#FFD60A]/40 bg-[#0B0C10] shadow-[0_0_50px_rgba(0,0,0,0.8)] hover:shadow-[0_0_40px_rgba(255,214,10,0.25)] transition-all duration-500">
               <div className="aspect-video relative overflow-hidden">
                 <img
                   src={featuredFilm.thumbnail_url}
                   alt={featuredFilm.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                
+                {/* Glowing border outline */}
+                <div className="absolute inset-0 border border-transparent group-hover:border-[#FFD60A]/20 rounded-2xl pointer-events-none transition-all duration-500" />
+                
+                {/* Premium tag */}
+                <div className="absolute top-3 right-3 z-10">
+                  <span className="bg-[#0B0C10]/80 border border-[#FFD60A]/40 text-[#FFD60A] text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-md backdrop-blur-md shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+                    Featured Trailer
+                  </span>
+                </div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Link
                     href={`/film/${featuredFilm.id}`}
-                    className="w-16 h-16 rounded-full bg-[#FFD60A] text-[#0B0C10] flex items-center justify-center pl-1 shadow-2xl group-hover:scale-125 transition-transform duration-300"
+                    className="w-16 h-16 rounded-full bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] flex items-center justify-center pl-1 shadow-[0_0_20px_rgba(255,214,10,0.4)] group-hover:shadow-[0_0_35px_rgba(255,214,10,0.7)] group-hover:scale-110 transition-all duration-300 relative z-10"
                   >
-                    <Play className="w-8 h-8 fill-current" />
+                    <Play className="w-8 h-8 fill-current text-[#0B0C10]" />
                   </Link>
                 </div>
               </div>

@@ -434,6 +434,32 @@ export const Header: React.FC = () => {
         </div>
       </nav>
 
+      {/* 2a. MOBILE TOP LOGO BAR (md:hidden) */}
+      <header 
+        className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0B0C10]/95 border-b border-[#1F2833]/80 flex items-center justify-between px-4 z-40 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+      >
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#F4A300] to-[#FFD60A] text-[#0B0C10] flex items-center justify-center font-black shadow-[0_0_12px_rgba(255,214,10,0.35)] group-hover:scale-105 transition-transform duration-300">
+            <Film className="w-4 h-4 fill-current" />
+          </div>
+          <span className="text-xs font-black tracking-wider text-[#F5F5F5] uppercase">
+            CINE<span className="text-[#FFD60A]">SHORT</span>
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          <span className="bg-[#FFD60A]/10 border border-[#FFD60A]/35 text-[#FFD60A] text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-[0_0_8px_rgba(255,214,10,0.15)] select-none">
+            PRO EDITION
+          </span>
+          <button 
+            onClick={() => setIsSearchOpen(true)}
+            className="p-1.5 text-gray-400 hover:text-[#FFD60A] active:scale-95 transition-all"
+            aria-label="Search short films"
+          >
+            <Search className="w-4.5 h-4.5" />
+          </button>
+        </div>
+      </header>
 
       {/* 3. PREMIUM FULLSCREEN SEARCH MODAL OVERLAY */}
       {isSearchOpen && (

@@ -27,7 +27,7 @@ export default function RootLayout({
           <Header />
 
           {/* Main Content & Footer Area shifted to fit sidebar/bottom-bar */}
-          <div className="flex-grow flex flex-col md:pl-20 pb-16 md:pb-0 min-h-screen">
+          <div className="flex-grow flex flex-col pt-14 md:pt-0 md:pl-20 pb-16 md:pb-0 min-h-screen">
             <main className="flex-grow flex flex-col">
               {children}
             </main>

@@ -15,11 +15,39 @@ import {
   Sparkles, 
   Tv,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  Captions
 } from 'lucide-react';
 import { Youtube } from '@/components/YoutubeIcon';
 import { extractYouTubeId } from '@/utils/youtubeUtils';
 import { getDriveEmbedUrl, isSampleOrInvalidDriveUrl } from '@/utils/googleDriveUtils';
+
+// Premium Timed Subtitle dialogue mapping helper
+const getSubtitleText = (time: number, lang: 'en' | 'es'): string => {
+  const dialogue = [
+    { start: 0, end: 4, en: "CineShort Platform – Presenting Tears of Steel", es: "Plataforma CineShort – Presentando Tears of Steel" },
+    { start: 4, end: 9, en: "This is a demonstration of our premium custom player.", es: "Esta es una demostración de nuestro reproductor premium personalizado." },
+    { start: 9, end: 14, en: "With full application control, subtitle tracks, and quality settings.", es: "Con control completo de la aplicación, pistas de subtítulos y ajustes de calidad." },
+    { start: 14, end: 19, en: "[Distant futuristic engines roaring]", es: "[Motores futuristas distantes rugiendo]" },
+    { start: 19, end: 24, en: "We are tracking the target. Prepare for arrival.", es: "Estamos rastreando al objetivo. Prepárense para la llegada." },
+    { start: 24, end: 30, en: "All systems online. Enjoy the cinema experience!", es: "Todos los sistemas en línea. ¡Disfruta la experiencia cinematográfica!" }
+  ];
+  
+  const matched = dialogue.find(d => time >= d.start && time < d.end);
+  if (matched) {
+    return lang === 'es' ? matched.es : matched.en;
+  }
+  
+  if (time >= 30) {
+    const modTime = time % 30;
+    const matchedLoop = dialogue.find(d => modTime >= d.start && modTime < d.end);
+    if (matchedLoop) {
+      return lang === 'es' ? matchedLoop.es : matchedLoop.en;
+    }
+  }
+  
+  return "";
+};
 
 declare global {
   interface Window {
@@ -121,6 +149,29 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [videoError, setVideoError] = useState(false);
+
+  // Subtitle & Quality Dropdown States and Refs
+  const [showQualityDropdown, setShowQualityDropdown] = useState(false);
+  const [showSubtitleDropdown, setShowSubtitleDropdown] = useState(false);
+  const [activeSubtitle, setActiveSubtitle] = useState<'off' | 'en' | 'es'>('off');
+
+  const qualityRef = useRef<HTMLDivElement>(null);
+  const subtitleRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (qualityRef.current && !qualityRef.current.contains(event.target as Node)) {
+        setShowQualityDropdown(false);
+      }
+      if (subtitleRef.current && !subtitleRef.current.contains(event.target as Node)) {
+        setShowSubtitleDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, []);
 
   // Initial source calculation for HTML5 video
   const getInitialSrc = () => {
@@ -495,6 +546,15 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
             )}
           </div>
         )}
+
+        {/* Custom Subtitles Overlay (Displays synchronized English/Spanish timed captions) */}
+        {activeSubtitle !== 'off' && (
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 max-w-[85%] text-center pointer-events-none">
+            <span className="bg-[#0B0C10]/90 text-[#F5F5F5] font-bold text-xs sm:text-sm md:text-base px-4 py-2 rounded-xl border border-[#FFD60A]/35 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.5)] leading-relaxed inline-block select-none animate-in fade-in zoom-in-95 duration-150">
+              {getSubtitleText(currentTime, activeSubtitle)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Yellow Application Control Bar (Active for BOTH YouTube & Direct Videos) */}
@@ -527,9 +587,9 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
         ) : null}
 
         {/* Control Buttons & Indicators */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
           {/* Left: Stream Source Badge & Interactive Yellow Playback Buttons */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
             {isYouTube ? (
               <span className="inline-flex items-center gap-1.5 bg-[#FFD60A]/15 text-[#FFD60A] border border-[#FFD60A]/40 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider shadow-[0_0_8px_rgba(255,214,10,0.2)]">
                 <Youtube className="w-3.5 h-3.5 text-[#FFD60A]" /> YouTube Cinema Stream
@@ -593,7 +653,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
           </div>
 
           {/* Right: Yellow Quality, Speed, Theater & Fullscreen */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
             {/* Speed Selector (for YouTube and Direct Videos) */}
             {(!isDrive || isSampleDrive) && (
               <div className="flex items-center gap-0.5 bg-[#1F2833] p-0.5 rounded-md border border-[#FFD60A]/30 text-[10px] font-bold">
@@ -613,23 +673,99 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
               </div>
             )}
 
-            {/* Quality Selector */}
-            <div className="flex items-center gap-1 bg-[#1F2833] p-0.5 rounded-md border border-[#FFD60A]/30 text-[10px] font-bold">
-              <Sliders className="w-3 h-3 text-[#FFD60A] ml-1.5" />
-              {(['720p', '1080p', '4K'] as const).map((q) => (
-                <button
-                  key={q}
-                  onClick={() => setQuality(q)}
-                  className={`px-2 py-0.5 rounded transition-all ${
-                    quality === q
-                      ? 'bg-[#FFD60A] text-[#0B0C10] font-black shadow-md'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {q}
-                </button>
-              ))}
+            {/* Premium Quality Selector (Popup Select) */}
+            <div ref={qualityRef} className="relative">
+              <button
+                onClick={() => {
+                  setShowQualityDropdown(!showQualityDropdown);
+                  setShowSubtitleDropdown(false);
+                }}
+                className={`bg-[#1F2833] hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] border border-[#FFD60A]/30 px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all select-none ${
+                  showQualityDropdown ? 'bg-[#FFD60A] text-[#0B0C10]' : ''
+                }`}
+                title="Video Quality"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>{quality}</span>
+              </button>
+
+              {showQualityDropdown && (
+                <div className="absolute right-0 bottom-full mb-2 w-28 bg-[#1F2833] border border-[#FFD60A]/30 rounded-xl shadow-2xl p-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                  <div className="text-[9px] uppercase tracking-widest text-gray-400 font-black px-2.5 py-1 select-none">
+                    Quality
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    {(['720p', '1080p', '4K'] as const).map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => {
+                          setQuality(q);
+                          setShowQualityDropdown(false);
+                        }}
+                        className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-bold transition-all ${
+                          quality === q
+                            ? 'bg-[#FFD60A] text-[#0B0C10]'
+                            : 'text-gray-300 hover:bg-black/30 hover:text-white'
+                        }`}
+                      >
+                        <span>{q}</span>
+                        {quality === q && <Check className="w-3.5 h-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Subtitle Selector (Popup Select CC) */}
+            {(!isDrive || isSampleDrive) && (
+              <div ref={subtitleRef} className="relative">
+                <button
+                  onClick={() => {
+                    setShowSubtitleDropdown(!showSubtitleDropdown);
+                    setShowQualityDropdown(false);
+                  }}
+                  className={`bg-[#1F2833] hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] border border-[#FFD60A]/30 px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all select-none ${
+                    showSubtitleDropdown ? 'bg-[#FFD60A] text-[#0B0C10]' : ''
+                  }`}
+                  title="Subtitles / Captions"
+                >
+                  <Captions className={`w-3.5 h-3.5 ${activeSubtitle !== 'off' ? 'text-green-400' : ''}`} />
+                  <span>CC</span>
+                </button>
+
+                {showSubtitleDropdown && (
+                  <div className="absolute right-0 bottom-full mb-2 w-32 bg-[#1F2833] border border-[#FFD60A]/30 rounded-xl shadow-2xl p-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="text-[9px] uppercase tracking-widest text-gray-400 font-black px-2.5 py-1 select-none">
+                      Subtitles
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {[
+                        { val: 'off', lbl: 'Off' },
+                        { val: 'en', lbl: 'English' },
+                        { val: 'es', lbl: 'Spanish' }
+                      ].map((s) => (
+                        <button
+                          key={s.val}
+                          onClick={() => {
+                            setActiveSubtitle(s.val as any);
+                            setShowSubtitleDropdown(false);
+                          }}
+                          className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-bold transition-all ${
+                            activeSubtitle === s.val
+                              ? 'bg-[#FFD60A] text-[#0B0C10]'
+                              : 'text-gray-300 hover:bg-black/30 hover:text-white'
+                          }`}
+                        >
+                          <span>{s.lbl}</span>
+                          {activeSubtitle === s.val && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Drive / Cinema HD Stream Mode Switcher */}
             {isDrive && (
