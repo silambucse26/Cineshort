@@ -83,49 +83,50 @@ export default function HomeFeedPage() {
     <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] pb-24 selection:bg-[#FFD60A] selection:text-[#0B0C10]">
       {/* 1. CINEMATIC FULL-BLEED HERO BANNER */}
       {featuredFilm ? (
-        <section className="relative w-full min-h-[50vh] sm:min-h-[70vh] flex items-center justify-center overflow-hidden mb-12 border-b border-gray-900 shadow-2xl">
+        <section className="relative w-full min-h-[55vh] sm:min-h-[70vh] flex items-center justify-center overflow-hidden mb-12 border-b border-gray-900 shadow-2xl">
           {/* Film Thumbnail Background with multi-stage gradient masks */}
           <div className="absolute inset-0 z-0">
             <img
               src={featuredFilm.thumbnail_url}
               alt={featuredFilm.title}
-              className="w-full h-full object-cover opacity-35 scale-105 blur-[2px] sm:blur-0"
+              className="w-full h-full object-cover opacity-50 lg:opacity-35 scale-105 transition-transform duration-[10s]"
             />
-            {/* Dark Radial Mask + Vertical OTT Gradients */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0B0C10] via-[#0B0C10]/80 to-transparent z-10" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-transparent to-[#0B0C10]/40 z-10" />
+            {/* Mobile Vertical linear gradient + Desktop Radial/Horizontal mask */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/85 to-[#0B0C10]/20 lg:hidden z-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0B0C10] via-[#0B0C10]/80 to-transparent hidden lg:block z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-transparent to-[#0B0C10]/40 hidden lg:block z-10" />
           </div>
 
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 relative z-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-20 relative z-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Left Description Column */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-[#E63946] text-white font-black text-[9px] sm:text-[10px] tracking-widest uppercase px-3 py-1 rounded-md flex items-center gap-1 shadow-[0_0_15px_rgba(230,57,70,0.4)]">
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left flex flex-col items-center lg:items-start">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                <span className="bg-[#E63946] text-white font-black text-[9px] tracking-widest uppercase px-3 py-1 rounded-md flex items-center gap-1 shadow-[0_0_15px_rgba(230,57,70,0.4)]">
                   <Flame className="w-3.5 h-3.5 fill-current" /> MASS TRENDING RELEASE
                 </span>
-                <span className="bg-[#FFD60A]/10 border border-[#FFD60A]/30 text-[#FFD60A] text-[10px] sm:text-xs font-black px-3 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm">
+                <span className="bg-[#FFD60A]/10 border border-[#FFD60A]/30 text-[#FFD60A] text-[9px] sm:text-xs font-black px-3 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm">
                   ★ {featuredFilm.rating_avg.toFixed(1)} AUDIENCE SCORE
                 </span>
               </div>
 
-              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight uppercase leading-none drop-shadow-lg">
+              <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black tracking-tight uppercase leading-none drop-shadow-lg text-center lg:text-left bg-gradient-to-r from-white via-white to-[#FFD60A] bg-clip-text text-transparent">
                 {featuredFilm.title}
               </h1>
 
-              <p className="text-gray-350 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl font-medium drop-shadow">
+              <p className="text-gray-350 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl font-medium drop-shadow text-center lg:text-left">
                 {featuredFilm.overview}
               </p>
 
               {/* Badges and metadata */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs font-bold text-gray-300 bg-[#0B0C10]/40 p-3 rounded-xl border border-white/5 backdrop-blur-md inline-flex">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-2 text-[9px] sm:text-xs font-bold text-gray-300 bg-[#0B0C10]/60 p-3 rounded-xl border border-white/5 backdrop-blur-md">
                 <div className="flex items-center gap-1 text-[#FFD60A]">
-                  <Clapperboard className="w-4 h-4" />
+                  <Clapperboard className="w-3.5 h-3.5" />
                   <span>DIRECTOR: <strong className="text-white uppercase font-black">{featuredFilm.director_name}</strong></span>
                 </div>
                 <span className="text-gray-600 hidden sm:inline">•</span>
                 <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4 text-gray-400" />
-                  <span className="truncate max-w-[200px]">CAST: <strong className="text-gray-200">{featuredFilm.hero_names.join(', ')}</strong></span>
+                  <Users className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="truncate max-w-[140px] sm:max-w-[200px]">CAST: <strong className="text-gray-200">{featuredFilm.hero_names.join(', ')}</strong></span>
                 </div>
                 <span className="text-gray-600 hidden sm:inline">•</span>
                 <div className="flex items-center gap-1 text-[#FFD60A]">
@@ -134,26 +135,27 @@ export default function HomeFeedPage() {
                 </div>
               </div>
 
-              <div className="pt-2 flex flex-wrap items-center gap-4">
+              {/* Side by side action buttons on mobile */}
+              <div className="pt-2 flex flex-row items-center justify-center lg:justify-start gap-3 w-full sm:w-auto">
                 <Link
                   href={`/film/${featuredFilm.id}`}
-                  className="btn-gold text-xs sm:text-sm font-black px-8 py-3.5 shadow-[0_0_25px_rgba(255,214,10,0.25)] flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform"
+                  className="flex-1 sm:flex-none btn-gold text-[10px] sm:text-xs font-black px-4 sm:px-8 py-3.5 shadow-[0_0_25px_rgba(255,214,10,0.25)] flex items-center justify-center gap-1.5 hover:scale-105 active:scale-95 transition-transform rounded-xl"
                 >
-                  <Play className="w-5 h-5 fill-current text-[#0B0C10]" />
-                  <span>STREAM MOVIE NOW</span>
+                  <Play className="w-4 h-4 fill-current text-[#0B0C10]" />
+                  <span>STREAM NOW</span>
                 </Link>
 
                 <Link
                   href={`/director/${featuredFilm.director_id}`}
-                  className="bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm px-6 py-3.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-colors"
+                  className="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm px-4 sm:px-6 py-3.5 rounded-xl text-[10px] sm:text-xs font-black tracking-wider uppercase transition-colors text-center"
                 >
-                  Explore Director Vault
+                  <span>DIRECTOR VAULT</span>
                 </Link>
               </div>
             </div>
 
             {/* Right Interactive Player Box */}
-            <div className="lg:col-span-5 relative group rounded-2xl overflow-hidden border border-white/10 bg-[#0B0C10] shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div className="lg:col-span-5 relative group rounded-2xl overflow-hidden border border-white/10 bg-[#0B0C10] shadow-[0_0_50px_rgba(0,0,0,0.8)] shadow-[0_0_40px_rgba(255,214,10,0.15)]">
               <div className="aspect-video relative overflow-hidden">
                 <img
                   src={featuredFilm.thumbnail_url}

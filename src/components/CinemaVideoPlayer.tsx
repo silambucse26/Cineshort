@@ -367,11 +367,21 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+      containerRef.current.requestFullscreen().catch(() => {});
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+      document.exitFullscreen().catch(() => {});
     }
   };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === containerRef.current);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Mouse Move Control Hiding
   const handleMouseMove = () => {
@@ -396,15 +406,23 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
       onMouseMove={handleMouseMove}
       className={`card-flat overflow-hidden border-2 border-[#FFD60A]/40 shadow-[0_0_30px_rgba(255,214,10,0.15)] relative rounded-2xl bg-black group transition-all ${
         isTheaterMode ? 'w-full max-w-full' : ''
+      } ${
+        isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen border-0 rounded-none' : ''
       }`}
     >
-      <div className="aspect-video bg-black w-full relative flex items-center justify-center overflow-hidden">
+      <div className={`bg-black w-full relative flex items-center justify-center overflow-hidden ${
+        isFullscreen ? 'h-[calc(100vh-80px)]' : 'aspect-video'
+      }`}>
         {/* YouTube Stream Mode via YouTube IFrame Player API (Controls = 0) */}
         {isYouTube && extractedYtId ? (
           <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
             {/* The element where YouTube API injects clean, control-free iframe */}
             {/* Wrapper to scale and crop out YouTube logo/title */}
-            <div className="absolute w-[116%] h-[116%] -top-[8%] -left-[8%] pointer-events-none overflow-hidden flex items-center justify-center">
+            <div className={`absolute pointer-events-none overflow-hidden flex items-center justify-center ${
+              isFullscreen 
+                ? 'w-[160%] h-[160%] -top-[30%] -left-[30%] md:w-[116%] md:h-[116%] md:-top-[8%] md:-left-[8%]' 
+                : 'w-[116%] h-[116%] -top-[8%] -left-[8%]'
+            }`}>
               <div id={ytDivId.current} className="w-full h-full pointer-events-none" />
             </div>
 
@@ -447,7 +465,9 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
               poster={poster}
               preload="auto"
               playsInline
-              className="w-full h-full object-contain cursor-pointer"
+              className={`w-full h-full cursor-pointer ${
+                isFullscreen ? 'object-cover md:object-contain' : 'object-contain'
+              }`}
               onClick={togglePlay}
             />
 
