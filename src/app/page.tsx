@@ -14,7 +14,9 @@ import {
   ChevronRight,
   Clapperboard,
   Users,
-  Award
+  Award,
+  TrendingUp,
+  Tv
 } from 'lucide-react';
 import { useShortFilm } from '../context/ShortFilmContext';
 import { FilmCard } from '../components/FilmCard';
@@ -78,55 +80,64 @@ export default function HomeFeedPage() {
   const topDirector = rankedDirectors[0];
 
   return (
-    <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] pb-20">
-      {/* MASS BLOCKBUSTER HERO BANNER */}
-      {featuredFilm && (
-        <section className="relative w-full bg-gradient-to-b from-[#1F2833]/90 via-[#0B0C10]/95 to-[#0B0C10] border-b border-[#FFD60A]/20 py-10 md:py-16 px-4 sm:px-6 lg:px-8 mb-10 overflow-hidden">
-          {/* Subtle background glow */}
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#FFD60A]/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] pb-24 selection:bg-[#FFD60A] selection:text-[#0B0C10]">
+      {/* 1. CINEMATIC FULL-BLEED HERO BANNER */}
+      {featuredFilm ? (
+        <section className="relative w-full min-h-[50vh] sm:min-h-[70vh] flex items-center justify-center overflow-hidden mb-12 border-b border-gray-900 shadow-2xl">
+          {/* Film Thumbnail Background with multi-stage gradient masks */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src={featuredFilm.thumbnail_url}
+              alt={featuredFilm.title}
+              className="w-full h-full object-cover opacity-35 scale-105 blur-[2px] sm:blur-0"
+            />
+            {/* Dark Radial Mask + Vertical OTT Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0B0C10] via-[#0B0C10]/80 to-transparent z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-transparent to-[#0B0C10]/40 z-10" />
+          </div>
 
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-            {/* Featured Mass Content */}
-            <div className="lg:col-span-7 space-y-5">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="bg-[#E63946] text-white font-black text-[10px] tracking-widest uppercase px-3 py-1 rounded-md flex items-center gap-1 shadow-lg animate-pulse">
-                  <Flame className="w-3.5 h-3.5 fill-current" /> MASS BLOCKBUSTER RELEASE
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 relative z-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left Description Column */}
+            <div className="lg:col-span-7 space-y-6 text-left">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="bg-[#E63946] text-white font-black text-[9px] sm:text-[10px] tracking-widest uppercase px-3 py-1 rounded-md flex items-center gap-1 shadow-[0_0_15px_rgba(230,57,70,0.4)]">
+                  <Flame className="w-3.5 h-3.5 fill-current" /> MASS TRENDING RELEASE
                 </span>
-                <span className="bg-[#FFD60A]/20 border border-[#FFD60A] text-[#FFD60A] text-xs font-extrabold px-3 py-0.5 rounded-full flex items-center gap-1">
+                <span className="bg-[#FFD60A]/10 border border-[#FFD60A]/30 text-[#FFD60A] text-[10px] sm:text-xs font-black px-3 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm">
                   ★ {featuredFilm.rating_avg.toFixed(1)} AUDIENCE SCORE
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#F5F5F5] tracking-tight uppercase leading-none drop-shadow-md">
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight uppercase leading-none drop-shadow-lg">
                 {featuredFilm.title}
               </h1>
 
-              <p className="text-gray-300 text-sm sm:text-base leading-relaxed line-clamp-3 max-w-2xl">
+              <p className="text-gray-350 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl font-medium drop-shadow">
                 {featuredFilm.overview}
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-gray-300">
-                <div className="flex items-center gap-1.5 text-[#FFD60A]">
+              {/* Badges and metadata */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs font-bold text-gray-300 bg-[#0B0C10]/40 p-3 rounded-xl border border-white/5 backdrop-blur-md inline-flex">
+                <div className="flex items-center gap-1 text-[#FFD60A]">
                   <Clapperboard className="w-4 h-4" />
-                  <span>DIRECTOR: <strong className="text-white uppercase tracking-wider">{featuredFilm.director_name}</strong></span>
+                  <span>DIRECTOR: <strong className="text-white uppercase font-black">{featuredFilm.director_name}</strong></span>
                 </div>
-                <span>•</span>
-                <div className="flex items-center gap-1 text-gray-300">
+                <span className="text-gray-600 hidden sm:inline">•</span>
+                <div className="flex items-center gap-1">
                   <Users className="w-4 h-4 text-gray-400" />
-                  <span>CAST: <strong>{featuredFilm.hero_names.join(', ')}</strong></span>
+                  <span className="truncate max-w-[200px]">CAST: <strong className="text-gray-200">{featuredFilm.hero_names.join(', ')}</strong></span>
                 </div>
-                <span>•</span>
+                <span className="text-gray-600 hidden sm:inline">•</span>
                 <div className="flex items-center gap-1 text-[#FFD60A]">
                   <Clock className="w-3.5 h-3.5" />
                   <span>{Math.round(featuredFilm.duration_sec / 60)} MIN SHORT</span>
                 </div>
               </div>
 
-              <div className="pt-3 flex flex-wrap items-center gap-4">
+              <div className="pt-2 flex flex-wrap items-center gap-4">
                 <Link
                   href={`/film/${featuredFilm.id}`}
-                  className="btn-gold text-sm font-black px-8 py-3.5 shadow-2xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform"
+                  className="btn-gold text-xs sm:text-sm font-black px-8 py-3.5 shadow-[0_0_25px_rgba(255,214,10,0.25)] flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform"
                 >
                   <Play className="w-5 h-5 fill-current text-[#0B0C10]" />
                   <span>STREAM MOVIE NOW</span>
@@ -134,73 +145,92 @@ export default function HomeFeedPage() {
 
                 <Link
                   href={`/director/${featuredFilm.director_id}`}
-                  className="bg-[#1F2833] hover:bg-[#1F2833]/80 text-[#F5F5F5] border border-gray-700 px-6 py-3.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-colors"
+                  className="bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm px-6 py-3.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-colors"
                 >
                   Explore Director Vault
                 </Link>
               </div>
             </div>
 
-            {/* Mass Hero Poster Box */}
-            <div className="lg:col-span-5 relative group rounded-2xl overflow-hidden border-2 border-[#FFD60A]/40 shadow-[0_0_40px_rgba(255,214,10,0.2)]">
-              <img
-                src={featuredFilm.thumbnail_url}
-                alt={featuredFilm.title}
-                className="w-full aspect-video object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                <Link
-                  href={`/film/${featuredFilm.id}`}
-                  className="w-16 h-16 rounded-full bg-[#FFD60A] text-[#0B0C10] flex items-center justify-center pl-1 shadow-2xl group-hover:scale-125 transition-transform duration-300"
-                >
-                  <Play className="w-8 h-8 fill-current" />
-                </Link>
+            {/* Right Interactive Player Box */}
+            <div className="lg:col-span-5 relative group rounded-2xl overflow-hidden border border-white/10 bg-[#0B0C10] shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+              <div className="aspect-video relative overflow-hidden">
+                <img
+                  src={featuredFilm.thumbnail_url}
+                  alt={featuredFilm.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Link
+                    href={`/film/${featuredFilm.id}`}
+                    className="w-16 h-16 rounded-full bg-[#FFD60A] text-[#0B0C10] flex items-center justify-center pl-1 shadow-2xl group-hover:scale-125 transition-transform duration-300"
+                  >
+                    <Play className="w-8 h-8 fill-current" />
+                  </Link>
+                </div>
               </div>
+            </div>
+          </div>
+        </section>
+      ) : (
+        /* Empty State banner placeholder */
+        <section className="relative w-full py-16 bg-[#1F2833]/20 border-b border-gray-900 text-center space-y-4">
+          <div className="max-w-md mx-auto space-y-2 px-4">
+            <Tv className="w-12 h-12 text-[#FFD60A] mx-auto animate-pulse" />
+            <h2 className="text-lg font-black text-white uppercase tracking-wider">Awaiting Theater Uploads</h2>
+            <p className="text-xs text-gray-400">
+              There are currently no approved short films in the catalog. Log in as an administrator to publish files.
+            </p>
+            <div className="pt-2">
+              <Link href="/login" className="btn-gold text-xs px-5 py-2 inline-block font-bold">
+                Go to login
+              </Link>
             </div>
           </div>
         </section>
       )}
 
-      {/* Main Content Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        {/* Filters Bar & Quick Stats */}
-        <div className="card-flat p-5 sm:p-7 space-y-5 border border-[#FFD60A]/30">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-700/50 pb-5">
+      {/* 2. MAIN FEED AND CAROUSELS */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        
+        {/* Floating glassmorphism filters panel */}
+        <div className="bg-[#1F2833]/45 border border-white/5 backdrop-blur-md p-5 rounded-2xl shadow-xl space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-[#FFD60A] text-xs font-bold uppercase tracking-wider mb-1">
-                <Sparkles className="w-4 h-4" /> Mass Short Film Collection
+              <div className="inline-flex items-center gap-1.5 text-[#FFD60A] text-[10px] font-black uppercase tracking-widest mb-0.5">
+                <Sparkles className="w-4 h-4 text-[#FFD60A]" /> CineShort Global Catalog
               </div>
-              <h2 className="font-black text-xl sm:text-2xl text-[#F5F5F5]">Explore Mass Blockbuster Movies</h2>
+              <h2 className="font-extrabold text-lg sm:text-xl text-white">Explore Blockbuster Short Films</h2>
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Direct Link to Director Collections Page */}
               <Link
                 href="/directors"
-                className="flex items-center gap-2 bg-[#FFD60A]/15 hover:bg-[#FFD60A]/25 border border-[#FFD60A]/40 px-4 py-2 rounded-xl text-xs font-bold text-[#FFD60A] transition-all hover:scale-105"
+                className="flex items-center gap-2 bg-[#FFD60A]/10 hover:bg-[#FFD60A]/20 border border-[#FFD60A]/35 px-4 py-2 rounded-xl text-xs font-black text-[#FFD60A] transition-all hover:scale-105 select-none"
               >
                 <Clapperboard className="w-4 h-4" />
-                <span>Director Collections</span>
+                <span>Director Vaults</span>
                 <ChevronRight className="w-4 h-4" />
               </Link>
 
               {topDirector && (
                 <Link
                   href={`/director/${topDirector.id}`}
-                  className="hidden sm:flex items-center gap-2 bg-[#0B0C10] hover:bg-[#0B0C10]/80 border border-gray-800 px-4 py-2 rounded-xl text-xs font-semibold text-gray-300 transition-colors"
+                  className="hidden sm:flex items-center gap-2 bg-[#0B0C10] hover:bg-[#0B0C10]/80 border border-white/5 px-4 py-2 rounded-xl text-xs font-semibold text-gray-300 transition-colors"
                 >
                   <Trophy className="w-4 h-4 text-[#FFD60A]" />
-                  <span>#1 Director: <strong className="text-[#FFD60A]">{topDirector.name}</strong></span>
+                  <span>Rank #1: <strong className="text-[#FFD60A]">{topDirector.name}</strong></span>
                 </Link>
               )}
             </div>
           </div>
 
-          {/* Filter Chips Bar */}
+          {/* Filters Selector pills bar */}
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            {/* Mood Chips */}
+            {/* Mood Category selection */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full lg:w-auto pb-1 lg:pb-0">
-              <span className="text-xs font-bold text-gray-400 shrink-0 uppercase tracking-wider">
+              <span className="text-[10px] font-extrabold text-gray-400 shrink-0 uppercase tracking-widest mr-1">
                 Mood:
               </span>
               {moodChips.map((chip) => (
@@ -209,8 +239,8 @@ export default function HomeFeedPage() {
                   onClick={() => setSelectedMood(chip.value)}
                   className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all shrink-0 flex items-center gap-2 ${
                     selectedMood === chip.value
-                      ? 'bg-[#FFD60A] text-[#0B0C10] font-black shadow-lg scale-105'
-                      : 'bg-[#0B0C10] text-gray-300 hover:text-white hover:bg-[#0B0C10]/70 border border-gray-700/50'
+                      ? 'bg-[#FFD60A] text-[#0B0C10] font-black shadow-[0_0_15px_rgba(255,214,10,0.2)] scale-105'
+                      : 'bg-[#0B0C10] text-gray-300 hover:text-white hover:bg-white/5 border border-white/5'
                   }`}
                 >
                   <span>{chip.icon}</span>
@@ -219,9 +249,9 @@ export default function HomeFeedPage() {
               ))}
             </div>
 
-            {/* Duration Chips */}
+            {/* Runtime Category Selection */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full lg:w-auto">
-              <span className="text-xs font-bold text-gray-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-extrabold text-gray-400 shrink-0 uppercase tracking-widest mr-1 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-[#FFD60A]" /> Runtime:
               </span>
               {durationOptions.map((opt) => (
@@ -231,7 +261,7 @@ export default function HomeFeedPage() {
                   className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all shrink-0 ${
                     selectedDuration === opt.value
                       ? 'bg-[#FFD60A] text-[#0B0C10] font-black shadow-md'
-                      : 'bg-[#0B0C10] text-gray-300 hover:text-white hover:bg-[#0B0C10]/70 border border-gray-700/50'
+                      : 'bg-[#0B0C10] text-gray-300 hover:text-white hover:bg-white/5 border border-white/5'
                   }`}
                 >
                   {opt.label}
@@ -241,38 +271,18 @@ export default function HomeFeedPage() {
           </div>
         </div>
 
-        {/* Dynamic Category Showcase Rows */}
+        {/* 3. SHOWCASE ROWS OR FILTER RESULTS */}
         {selectedMood === 'all' && selectedDuration === 'all' ? (
           <div className="space-y-12">
-            {/* Direct Link Banner to Director Collections */}
-            <div className="card-flat p-6 border-2 border-[#FFD60A]/40 bg-gradient-to-r from-[#1F2833] via-[#0B0C10] to-[#1F2833] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4 text-center sm:text-left">
-                <div className="w-12 h-12 rounded-2xl bg-[#FFD60A] text-[#0B0C10] flex items-center justify-center font-black shrink-0 shadow-lg">
-                  <Clapperboard className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-[#F5F5F5] uppercase tracking-wide">Director Movie Collections Vault</h3>
-                  <p className="text-xs text-gray-300 mt-0.5">Explore full movie filmographies and short film vaults grouped by director.</p>
-                </div>
-              </div>
-              <Link
-                href="/directors"
-                className="btn-gold text-xs px-6 py-3 font-black shrink-0 uppercase tracking-wider flex items-center gap-2 shadow-xl"
-              >
-                <span>Browse All Collections</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            {/* Row 1: Trending Mass Blockbusters */}
+            {/* Row 1: Trending Blockbusters */}
             {trendingFilms.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-4 border-[#FFD60A] pl-3">
-                  <h2 className="font-black text-lg sm:text-xl text-[#F5F5F5] tracking-wider uppercase flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-[#FFD60A] fill-current" />
+                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+                  <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
+                    <Flame className="w-4.5 h-4.5 text-[#FFD60A] fill-current" />
                     <span>Trending Mass Blockbusters</span>
                   </h2>
-                  <span className="text-xs text-gray-400 font-bold uppercase">{trendingFilms.length} Movies</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{trendingFilms.length} Movies</span>
                 </div>
 
                 <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
@@ -288,12 +298,12 @@ export default function HomeFeedPage() {
             {/* Row 2: Action & Suspense Thrillers */}
             {thrillerDarkFilms.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-4 border-[#FFD60A] pl-3">
-                  <h2 className="font-black text-lg sm:text-xl text-[#F5F5F5] tracking-wider uppercase flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-[#FFD60A]" />
+                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+                  <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
+                    <Sparkles className="w-4.5 h-4.5 text-[#FFD60A]" />
                     <span>Action & Suspense Thrillers</span>
                   </h2>
-                  <span className="text-xs text-gray-400 font-bold uppercase">{thrillerDarkFilms.length} Movies</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{thrillerDarkFilms.length} Movies</span>
                 </div>
 
                 <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
@@ -309,12 +319,12 @@ export default function HomeFeedPage() {
             {/* Row 3: Uplifting & Romantic Hits */}
             {upliftingRomanceFilms.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-4 border-[#FFD60A] pl-3">
-                  <h2 className="font-black text-lg sm:text-xl text-[#F5F5F5] tracking-wider uppercase flex items-center gap-2">
-                    <Star className="w-5 h-5 text-[#FFD60A] fill-current" />
+                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+                  <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
+                    <Star className="w-4.5 h-4.5 text-[#FFD60A] fill-current" />
                     <span>Uplifting & Romantic Hits</span>
                   </h2>
-                  <span className="text-xs text-gray-400 font-bold uppercase">{upliftingRomanceFilms.length} Movies</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{upliftingRomanceFilms.length} Movies</span>
                 </div>
 
                 <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
@@ -330,12 +340,12 @@ export default function HomeFeedPage() {
             {/* Row 4: Blockbuster Comedies */}
             {comedyFilms.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-4 border-[#FFD60A] pl-3">
-                  <h2 className="font-black text-lg sm:text-xl text-[#F5F5F5] tracking-wider uppercase flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-[#FFD60A]" />
+                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+                  <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
+                    <Trophy className="w-4.5 h-4.5 text-[#FFD60A]" />
                     <span>Blockbuster Comedies</span>
                   </h2>
-                  <span className="text-xs text-gray-400 font-bold uppercase">{comedyFilms.length} Movies</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{comedyFilms.length} Movies</span>
                 </div>
 
                 <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
@@ -351,12 +361,12 @@ export default function HomeFeedPage() {
             {/* Row 5: Fresh Releases */}
             {freshReleases.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-4 border-[#FFD60A] pl-3">
-                  <h2 className="font-black text-lg sm:text-xl text-[#F5F5F5] tracking-wider uppercase flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-[#FFD60A]" />
+                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+                  <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
+                    <Clock className="w-4.5 h-4.5 text-[#FFD60A]" />
                     <span>Fresh New Releases</span>
                   </h2>
-                  <span className="text-xs text-gray-400 font-bold uppercase">{freshReleases.length} Movies</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{freshReleases.length} Movies</span>
                 </div>
 
                 <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
@@ -371,32 +381,37 @@ export default function HomeFeedPage() {
           </div>
         ) : (
           /* Filtered Results Grid */
-          <div className="space-y-4">
-            <h3 className="text-xs uppercase font-extrabold tracking-wider text-gray-400">
-              Filtered Movie Vault ({filteredFilms.length})
-            </h3>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+              <h2 className="font-black text-sm sm:text-base text-white uppercase tracking-wider">
+                Search Results
+              </h2>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                {filteredFilms.length} {filteredFilms.length === 1 ? 'Movie' : 'Movies'} Found
+              </span>
+            </div>
+
             {filteredFilms.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredFilms.map((film) => (
                   <FilmCard key={film.id} film={film} />
                 ))}
               </div>
             ) : (
-              <div className="card-flat p-12 text-center space-y-4">
-                <Film className="w-12 h-12 text-gray-500 mx-auto" />
-                <h3 className="text-lg font-bold text-gray-300">No approved short films match your filter</h3>
+              <div className="card-flat p-12 text-center space-y-3 border border-gray-800 bg-[#1F2833]/15">
+                <span className="text-3xl">🍿</span>
+                <h3 className="font-bold text-sm text-white uppercase tracking-wider">No Matches Found</h3>
                 <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                  Try adjusting your mood tag or runtime options.
+                  We couldn't find any films matching the selected mood and duration. Choose different filter combinations.
                 </p>
-                <button
-                  onClick={() => {
-                    setSelectedMood('all');
-                    setSelectedDuration('all');
-                  }}
-                  className="btn-gold text-xs px-5 py-2.5 font-bold"
-                >
-                  Reset All Filters
-                </button>
+                <div className="pt-2">
+                  <button
+                    onClick={() => { setSelectedMood('all'); setSelectedDuration('all'); }}
+                    className="btn-gold text-xs px-4 py-2 font-bold"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
               </div>
             )}
           </div>
