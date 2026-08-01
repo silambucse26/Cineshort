@@ -865,49 +865,55 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const toggleFollowDirector = (directorId: string) => {
-    setFollowedDirectorIds((prev) => {
-      const isFollowing = prev.includes(directorId);
-      const updated = isFollowing ? prev.filter((id) => id !== directorId) : [...prev, directorId];
-      
-      setDirectors((prevDirs) =>
-        prevDirs.map((d) => (d.id === directorId ? { ...d, follower_count: Math.max(0, d.follower_count + (isFollowing ? -1 : 1)) } : d))
-      );
+    const isFollowing = followedDirectorIds.includes(directorId);
+    
+    // 1. Update followed director IDs
+    setFollowedDirectorIds((prev) =>
+      isFollowing ? prev.filter((id) => id !== directorId) : [...prev, directorId]
+    );
 
-      if (isSupabaseConfigured && supabase && activePersona.email) {
-        (async () => {
-          try {
-            if (isFollowing) {
-              await supabase
-                .from('director_follows')
-                .delete()
-                .eq('user_id', activePersona.id)
-                .eq('director_id', directorId);
-            } else {
-              await supabase
-                .from('director_follows')
-                .insert([{ user_id: activePersona.id, director_id: directorId }]);
-            }
+    // 2. Update local directors state count
+    setDirectors((prevDirs) =>
+      prevDirs.map((d) =>
+        d.id === directorId
+          ? { ...d, follower_count: Math.max(0, d.follower_count + (isFollowing ? -1 : 1)) }
+          : d
+      )
+    );
 
-            const { data: dirData } = await supabase
-              .from('directors')
-              .select('follower_count')
-              .eq('id', directorId)
-              .single();
-            if (dirData) {
-              const currentFollowers = dirData.follower_count || 0;
-              await supabase
-                .from('directors')
-                .update({ follower_count: Math.max(0, currentFollowers + (isFollowing ? -1 : 1)) })
-                .eq('id', directorId);
-            }
-          } catch (e) {
-            console.error('Error toggling follow in Supabase:', e);
+    // 3. Sync to Supabase in background
+    if (isSupabaseConfigured && supabase && activePersona.email) {
+      (async () => {
+        try {
+          if (isFollowing) {
+            await supabase
+              .from('director_follows')
+              .delete()
+              .eq('user_id', activePersona.id)
+              .eq('director_id', directorId);
+          } else {
+            await supabase
+              .from('director_follows')
+              .insert([{ user_id: activePersona.id, director_id: directorId }]);
           }
-        })();
-      }
 
-      return updated;
-    });
+          const { data: dirData } = await supabase
+            .from('directors')
+            .select('follower_count')
+            .eq('id', directorId)
+            .single();
+          if (dirData) {
+            const currentFollowers = dirData.follower_count || 0;
+            await supabase
+              .from('directors')
+              .update({ follower_count: Math.max(0, currentFollowers + (isFollowing ? -1 : 1)) })
+              .eq('id', directorId);
+          }
+        } catch (e) {
+          console.error('Error toggling follow in Supabase:', e);
+        }
+      })();
+    }
   };
 
   const getFilmById = (filmId: string) => films.find((f) => f.id === filmId);
