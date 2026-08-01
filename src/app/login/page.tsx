@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Film, User, Lock, Mail, Phone, ArrowRight, ShieldCheck, Sparkles, Key } from 'lucide-react';
 import { useShortFilm } from '@/context/ShortFilmContext';
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect') || '/';
@@ -298,5 +298,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-4rem)] bg-[#0B0C10] flex items-center justify-center">
+        <div className="text-xs text-gray-400 font-bold animate-pulse uppercase tracking-widest text-gray-500">
+          Loading Auth Flow...
+        </div>
+      </div>
+    }>
+      <LoginFormContent />
+    </Suspense>
   );
 }
