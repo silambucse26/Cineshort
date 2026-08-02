@@ -23,15 +23,18 @@ import { Youtube } from '@/components/YoutubeIcon';
 import { extractYouTubeId } from '@/utils/youtubeUtils';
 import { getDriveEmbedUrl, isSampleOrInvalidDriveUrl, getDriveDirectStreamUrl } from '@/utils/googleDriveUtils';
 
-// Premium Timed Subtitle dialogue mapping helper
-const getSubtitleText = (time: number, lang: 'en' | 'es'): string => {
+// Premium Timed Subtitle dialogue mapping helper (Dynamic based on film metadata)
+const getSubtitleText = (time: number, lang: 'en' | 'es', title?: string, overview?: string): string => {
+  const filmName = title || 'CineShort Original';
+  const snippet = overview && overview.length > 10 ? overview.substring(0, 65) + '...' : 'In the quiet shadows of the city, secrets begin to unravel...';
+
   const dialogue = [
-    { start: 0, end: 4, en: "CineShort Platform – Presenting Tears of Steel", es: "Plataforma CineShort – Presentando Tears of Steel" },
-    { start: 4, end: 9, en: "This is a demonstration of our premium custom player.", es: "Esta es una demostración de nuestro reproductor premium personalizado." },
-    { start: 9, end: 14, en: "With full application control, subtitle tracks, and quality settings.", es: "Con control completo de la aplicación, pistas de subtítulos y ajustes de calidad." },
-    { start: 14, end: 19, en: "[Distant futuristic engines roaring]", es: "[Motores futuristas distantes rugiendo]" },
-    { start: 19, end: 24, en: "We are tracking the target. Prepare for arrival.", es: "Estamos rastreando al objetivo. Prepárense para la llegada." },
-    { start: 24, end: 30, en: "All systems online. Enjoy the cinema experience!", es: "¡Todos los sistemas en línea. Disfruta la experiencia cinematográfica!" }
+    { start: 0, end: 4, en: `[CineShort Cinema] Presenting "${filmName}"`, es: `[CineShort Cinema] Presentando "${filmName}"` },
+    { start: 4, end: 9, en: `"${snippet}"`, es: `"${snippet}"` },
+    { start: 9, end: 14, en: "[Dramatic cinematic score building]", es: "[Banda sonora dramática en aumento]" },
+    { start: 14, end: 19, en: "We have to find out the truth before sunrise.", es: "Tenemos que descubrir la verdad antes del amanecer." },
+    { start: 19, end: 24, en: "[Suspenseful tension rising]", es: "[Tensión y suspenso en aumento]" },
+    { start: 24, end: 30, en: "Every choice has a story. Watch closely.", es: "Cada elección tiene una historia. Mira con atención." }
   ];
   
   const matched = dialogue.find(d => time >= d.start && time < d.end);
@@ -64,6 +67,7 @@ interface CinemaVideoPlayerProps {
   driveLink?: string;
   poster?: string;
   title?: string;
+  overview?: string;
   videoSource?: 'youtube' | 'drive' | 'direct';
   durationSec?: number;
   isTheaterMode?: boolean;
@@ -115,6 +119,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   driveLink,
   poster,
   title = 'Short Film',
+  overview = '',
   videoSource,
   durationSec = 120,
   isTheaterMode = false,
@@ -129,11 +134,11 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   const extractedYtId = youtubeId || extractYouTubeId(youtubeUrl || videoUrl || driveLink || '');
   const isYouTube = Boolean(extractedYtId) || videoSource === 'youtube';
 
-  const isDrive = !isYouTube && (Boolean(driveLink) || (videoUrl && videoUrl.includes('drive.google.com')));
-  const isSampleDrive = isDrive && isSampleOrInvalidDriveUrl(driveLink || videoUrl);
+  const isDrive = !isYouTube && (Boolean(driveLink) || Boolean(videoUrl && videoUrl.includes('drive.google.com')));
+  const isSampleDrive = isDrive && Boolean(isSampleOrInvalidDriveUrl(driveLink || videoUrl));
 
   // Allow toggling between Drive IFrame mode and App HD Direct Player mode
-  const [useDriveIframe, setUseDriveIframe] = useState<boolean>(isDrive && !isSampleDrive);
+  const [useDriveIframe, setUseDriveIframe] = useState<boolean>(Boolean(isDrive && !isSampleDrive));
 
   // State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -569,7 +574,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
         {activeSubtitle !== 'off' && (
           <div className="absolute bottom-16 sm:bottom-20 left-1/2 transform -translate-x-1/2 z-30 max-w-[85%] text-center pointer-events-none">
             <span className="bg-black/85 text-white font-bold text-xs sm:text-sm px-3.5 py-1.5 rounded-lg border border-[#FFD60A]/30 backdrop-blur-md shadow-md leading-relaxed inline-block">
-              {getSubtitleText(currentTime, activeSubtitle)}
+              {getSubtitleText(currentTime, activeSubtitle, title, overview)}
             </span>
           </div>
         )}

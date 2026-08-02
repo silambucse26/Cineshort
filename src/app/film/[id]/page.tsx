@@ -134,6 +134,7 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
             driveLink={film.drive_link}
             poster={film.thumbnail_url}
             title={film.title}
+            overview={film.overview}
             videoSource={film.video_source}
             durationSec={film.duration_sec}
             isTheaterMode={isTheaterMode}

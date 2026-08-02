@@ -13,13 +13,14 @@ import {
   ArrowLeft,
   Sparkles,
   Key,
-  ShieldCheck
+  ShieldCheck,
+  LogOut
 } from 'lucide-react';
 import { useShortFilm } from '../../context/ShortFilmContext';
 
 export default function UserProfilePage() {
   const router = useRouter();
-  const { activePersona, isLoaded, updateUserProfile } = useShortFilm();
+  const { activePersona, isLoaded, updateUserProfile, logoutUser, logoutAdmin } = useShortFilm();
 
   // Guard for logged in users
   useEffect(() => {
@@ -124,6 +125,12 @@ export default function UserProfilePage() {
     }
   };
 
+  const handleLogout = () => {
+    logoutUser();
+    logoutAdmin();
+    router.replace('/login');
+  };
+
   return (
     <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -136,9 +143,20 @@ export default function UserProfilePage() {
           >
             <ArrowLeft className="w-4 h-4" /> Back to Home Feed
           </button>
-          <div className="flex items-center gap-1.5 text-xs text-[#FFD60A] font-black uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-[#FFD60A]" />
-            <span>Account settings</span>
+          
+          <div className="flex items-center gap-3">
+            <div className="hidden xs:flex items-center gap-1.5 text-xs text-[#FFD60A] font-black uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-[#FFD60A]" />
+              <span>Account settings</span>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 bg-[#E63946]/15 hover:bg-[#E63946] text-[#E63946] hover:text-white border border-[#E63946]/40 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-md"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
+            </button>
           </div>
         </div>
 
@@ -198,6 +216,18 @@ export default function UserProfilePage() {
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#FFD60A]" />
                 <span>Generate Random</span>
+              </button>
+            </div>
+
+            {/* Account Logout Action Box */}
+            <div className="w-full pt-4 border-t border-gray-700/40">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full py-3 bg-[#E63946]/10 hover:bg-[#E63946]/20 border border-[#E63946]/50 text-[#E63946] font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 active:scale-95"
+              >
+                <LogOut className="w-4 h-4 text-[#E63946]" />
+                <span>Log Out Account</span>
               </button>
             </div>
           </div>
