@@ -93,8 +93,20 @@ function HomeFeedContent() {
   const topDirector = rankedDirectors[0];
 
   return (
-    <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] pb-24 selection:bg-[#FFD60A] selection:text-[#0B0C10]">
+    <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] pb-24 selection:bg-[#FFD60A] selection:text-[#0B0C10] relative">
       
+      {/* AMBIENT MOBILE FULL-BLEED BACKDROP */}
+      {featuredFilm && (
+        <div className="md:hidden absolute top-0 inset-x-0 h-[85vh] overflow-hidden pointer-events-none z-0 select-none">
+          <img
+            src={featuredFilm.thumbnail_url}
+            alt=""
+            className="w-full h-full object-cover opacity-35 scale-125 blur-3xl"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0B0C10]/30 via-[#0B0C10]/75 to-[#0B0C10]" />
+        </div>
+      )}
+
       {/* 0. MOBILE TOP PILLS (TV Shows, Movies, Categories) */}
       <div className="md:hidden pt-3 pb-2 px-4 flex items-center justify-center gap-2.5 z-30 relative select-none">
         <button
