@@ -414,19 +414,33 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }
   };
 
-  // Fullscreen Handler
+  // Fullscreen & Orientation Lock Handler
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(() => {});
+      containerRef.current.requestFullscreen().then(() => {
+        if (typeof window !== 'undefined' && window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
+          window.screen.orientation.lock('landscape').catch(() => {});
+        }
+      }).catch(() => {});
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().then(() => {
+        if (typeof window !== 'undefined' && window.screen && window.screen.orientation && typeof window.screen.orientation.unlock === 'function') {
+          try { window.screen.orientation.unlock(); } catch {}
+        }
+      }).catch(() => {});
     }
   };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(document.fullscreenElement === containerRef.current);
+      const isCurrentlyFullscreen = document.fullscreenElement === containerRef.current;
+      setIsFullscreen(isCurrentlyFullscreen);
+      if (!isCurrentlyFullscreen) {
+        if (typeof window !== 'undefined' && window.screen && window.screen.orientation && typeof window.screen.orientation.unlock === 'function') {
+          try { window.screen.orientation.unlock(); } catch {}
+        }
+      }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {

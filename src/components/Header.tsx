@@ -20,9 +20,19 @@ import {
   Menu,
   ChevronRight,
   Eye,
-  Clapperboard
+  Clapperboard,
+  Tv,
+  Settings
 } from 'lucide-react';
 import { useShortFilm } from '../context/ShortFilmContext';
+
+export const RedRibbonLogo: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M25 15V85" stroke="#B20710" strokeWidth="16" strokeLinecap="round" />
+    <path d="M75 15V85" stroke="#B20710" strokeWidth="16" strokeLinecap="round" />
+    <path d="M25 15L75 85" stroke="#E50914" strokeWidth="16" strokeLinecap="round" className="drop-shadow-[0_0_12px_rgba(229,9,20,0.8)]" />
+  </svg>
+);
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
@@ -288,175 +298,89 @@ export const Header: React.FC = () => {
 
       {/* 2. MOBILE BOTTOM NAVIGATION BAR (md:hidden) */}
       <nav 
-        className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0B0C10]/95 border-t border-[#1F2833] flex justify-around items-center z-50 px-4 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.5)]"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0B0C10]/95 border-t border-white/10 flex justify-around items-center z-50 px-2 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.8)] select-none"
       >
         {/* Mobile Home */}
         <Link
           href="/"
-          className={`flex flex-col items-center gap-0.5 py-1 px-3.5 rounded-lg transition-colors ${
-            pathname === '/' ? 'text-[#FFD60A]' : 'text-gray-400'
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
+            pathname === '/' ? 'text-white font-bold' : 'text-gray-400 hover:text-white'
           }`}
         >
           <Home className="w-5 h-5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider">Feed</span>
+          <span className="text-[9px] font-bold tracking-wider">Home</span>
         </Link>
 
-        {/* Mobile Directors Collections */}
+        {/* Mobile Series */}
         <Link
-          href="/directors"
+          href="/?type=series"
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
-            pathname === '/directors' ? 'text-[#FFD60A]' : 'text-gray-400'
+            pathname === '/' ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-white'
           }`}
         >
-          <Clapperboard className="w-5 h-5 text-[#FFD60A]" />
-          <span className="text-[9px] font-bold uppercase tracking-wider text-[#FFD60A]">Vault</span>
+          <Tv className="w-5 h-5" />
+          <span className="text-[9px] font-bold tracking-wider">Series</span>
         </Link>
 
-        {/* Mobile Search */}
-        <button
-          onClick={() => setIsSearchOpen(true)}
-          className="flex flex-col items-center gap-0.5 py-1 px-3.5 rounded-lg text-gray-400 hover:text-white"
+        {/* Mobile Center Brand Logo (Red N Ribbon) */}
+        <Link
+          href="/"
+          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-full hover:scale-110 active:scale-95 transition-transform"
         >
-          <Search className="w-5 h-5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider">Search</span>
-        </button>
+          <RedRibbonLogo className="w-8 h-8" />
+        </Link>
 
-        {/* Mobile Restricted: Upload (Admin Only) */}
-        {isAdmin && (
-          <Link
-            href="/upload"
-            className={`flex flex-col items-center gap-0.5 py-1 px-3.5 rounded-lg transition-colors ${
-              pathname === '/upload' ? 'text-[#FFD60A]' : 'text-gray-400'
-            }`}
-          >
-            <Upload className="w-5 h-5" />
-            <span className="text-[9px] font-bold uppercase tracking-wider text-[#FFD60A]">Upload</span>
-          </Link>
-        )}
-
-        {/* Mobile Restricted: Leaderboard (Admin Only) */}
-        {isAdmin && (
-          <Link
-            href="/leaderboard"
-            className={`flex flex-col items-center gap-0.5 py-1 px-3.5 rounded-lg transition-colors ${
-              pathname === '/leaderboard' ? 'text-[#F4A300]' : 'text-gray-400'
-            }`}
-          >
-            <Trophy className="w-5 h-5" />
-            <span className="text-[9px] font-bold uppercase tracking-wider text-[#F4A300]">Rank</span>
-          </Link>
-        )}
-
-        {/* Mobile Profile Direct Link (Only if logged in) */}
-        {isLoggedIn && (
-          <Link
-            href="/profile"
-            className={`flex flex-col items-center gap-0.5 py-1 px-3.5 rounded-lg transition-colors ${
-              pathname === '/profile' ? 'text-[#FFD60A]' : 'text-gray-400'
-            }`}
-          >
-            <User className="w-5 h-5" />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Profile</span>
-          </Link>
-        )}
-
-        {/* Mobile Profile Avatar Trigger */}
-        <div
-          onClick={handleProfileClick}
-          className="flex flex-col items-center justify-center relative cursor-pointer select-none"
+        {/* Mobile Movies */}
+        <Link
+          href="/?type=movies"
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
+            pathname === '/' ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-white'
+          }`}
         >
-          <img
-            src={activePersona.avatar}
-            alt={activePersona.name}
-            className="w-6 h-6 rounded-full object-cover border border-[#FFD60A]"
-          />
-          <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mt-0.5">Me</span>
+          <Film className="w-5 h-5" />
+          <span className="text-[9px] font-bold tracking-wider">Movies</span>
+        </Link>
 
-          {/* Mobile Profile Menu Overlay Popup */}
-          {showProfileMenu && (
-            <div 
-              className="absolute right-0 bottom-16 w-56 bg-[#1F2833] border border-[#FFD60A]/30 rounded-xl shadow-2xl p-3 text-left space-y-2.5 z-50 text-xs"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {isLoggedIn ? (
-                <>
-                  <div className="pb-2 border-b border-gray-700/60 leading-tight">
-                    <div className="font-bold truncate text-[#F5F5F5]">{activePersona.name}</div>
-                    <div className="text-[9px] text-gray-400 truncate">{activePersona.email}</div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    {isAdmin && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setShowProfileMenu(false)}
-                        className="flex items-center gap-1.5 w-full p-2 bg-[#F4A300]/10 text-[#FFD60A] rounded font-bold justify-center"
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Admin dashboard</span>
-                      </Link>
-                    )}
-                    <Link
-                      href="/profile"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="flex items-center gap-1.5 w-full p-2 bg-[#0B0C10] hover:bg-[#0B0C10]/80 text-gray-200 rounded font-bold justify-center"
-                    >
-                      <User className="w-3.5 h-3.5 text-[#FFD60A]" />
-                      <span>Edit Profile</span>
-                    </Link>
-                    <button
-                      onClick={() => {
-                        logoutUser();
-                        setShowProfileMenu(false);
-                        router.push('/');
-                      }}
-                      className="flex items-center gap-1.5 w-full p-2 bg-red-950/20 text-[#E63946] rounded font-bold justify-center"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center space-y-2 p-1">
-                  <p className="text-[10px] text-gray-300">Sign in to play short films</p>
-                  <Link
-                    href="/login"
-                    onClick={() => setShowProfileMenu(false)}
-                    className="flex items-center justify-center gap-1.5 w-full p-2 bg-[#FFD60A] text-[#0B0C10] font-bold rounded"
-                  >
-                    <LogIn className="w-3.5 h-3.5 text-[#0B0C10]" />
-                    <span>Sign In</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Mobile Setting / Profile Link */}
+        <Link
+          href="/profile"
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
+            pathname === '/profile' ? 'text-white font-bold' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-[9px] font-bold tracking-wider">Setting</span>
+        </Link>
       </nav>
 
       {/* 2a. MOBILE TOP LOGO BAR (md:hidden) */}
       <header 
-        className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0B0C10]/95 border-b border-[#1F2833]/80 flex items-center justify-between px-4 z-40 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+        className="md:hidden fixed top-0 left-0 right-0 h-14 bg-gradient-to-b from-[#0B0C10]/95 to-[#0B0C10]/80 border-b border-white/5 flex items-center justify-between px-4 z-40 backdrop-blur-md shadow-md"
       >
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#F4A300] to-[#FFD60A] text-[#0B0C10] flex items-center justify-center font-black shadow-[0_0_12px_rgba(255,214,10,0.35)] group-hover:scale-105 transition-transform duration-300">
-            <Film className="w-4 h-4 fill-current" />
-          </div>
-          <span className="text-xs font-black tracking-wider text-[#F5F5F5] uppercase">
-            CINE<span className="text-[#FFD60A]">SHORT</span>
-          </span>
+          <RedRibbonLogo className="w-7 h-7 group-hover:scale-105 transition-transform" />
         </Link>
 
         <div className="flex items-center gap-3">
-          <span className="bg-[#FFD60A]/10 border border-[#FFD60A]/35 text-[#FFD60A] text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-[0_0_8px_rgba(255,214,10,0.15)] select-none">
-            PRO EDITION
-          </span>
           <button 
             onClick={() => setIsSearchOpen(true)}
-            className="p-1.5 text-gray-400 hover:text-[#FFD60A] active:scale-95 transition-all"
+            className="p-1.5 text-gray-300 hover:text-white active:scale-95 transition-all"
             aria-label="Search short films"
           >
-            <Search className="w-4.5 h-4.5" />
+            <Search className="w-5 h-5" />
+          </button>
+
+          {/* Red/Colored Profile Icon Trigger */}
+          <button
+            onClick={handleProfileClick}
+            className="w-7 h-7 rounded bg-[#E50914] flex items-center justify-center overflow-hidden border border-white/20 shadow-md active:scale-95 transition-transform relative"
+            aria-label="Profile Menu"
+          >
+            <img
+              src={activePersona.avatar}
+              alt={activePersona.name}
+              className="w-full h-full object-cover"
+            />
           </button>
         </div>
       </header>

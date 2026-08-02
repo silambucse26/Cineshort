@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   Film, 
   Sparkles, 
@@ -16,17 +17,26 @@ import {
   Users,
   Award,
   TrendingUp,
-  Tv
+  Tv,
+  Plus,
+  Settings
 } from 'lucide-react';
 import { useShortFilm } from '../context/ShortFilmContext';
 import { FilmCard } from '../components/FilmCard';
 import { MoodTag, DurationFilter } from '../types/shortfilm';
 
-export default function HomeFeedPage() {
+function HomeFeedContent() {
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get('type') || 'all';
+
   const { approvedFilms, directors } = useShortFilm();
 
   const [selectedMood, setSelectedMood] = useState<MoodTag | 'all'>('all');
   const [selectedDuration, setSelectedDuration] = useState<DurationFilter>('all');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'series' | 'movies'>(
+    typeParam === 'series' ? 'series' : typeParam === 'movies' ? 'movies' : 'all'
+  );
 
   const moodChips: { label: string; value: MoodTag | 'all'; icon: string }[] = [
     { label: 'All Moods', value: 'all', icon: '✨' },
@@ -44,8 +54,11 @@ export default function HomeFeedPage() {
     { label: '3 - 5 min', value: '3-5' },
   ];
 
-  // Filter ONLY approved films by Mood Tag & Duration Range
+  // Filter ONLY approved films by Mood Tag, Duration Range, & Type Tab
   const filteredFilms = approvedFilms.filter((film) => {
+    if (activeTab === 'series' && film.duration_sec <= 120) return false;
+    if (activeTab === 'movies' && film.duration_sec > 180) return false;
+
     if (selectedMood !== 'all' && film.mood_tag !== selectedMood) {
       return false;
     }
@@ -81,65 +94,166 @@ export default function HomeFeedPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] pb-24 selection:bg-[#FFD60A] selection:text-[#0B0C10]">
-      {/* 1. CINEMATIC FULL-BLEED HERO BANNER */}
+      
+      {/* 0. MOBILE TOP PILLS (TV Shows, Movies, Categories) */}
+      <div className="md:hidden pt-3 pb-2 px-4 flex items-center justify-center gap-2.5 z-30 relative select-none">
+        <button
+          onClick={() => {
+            setActiveTab('series');
+            setShowMobileFilters(false);
+          }}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
+            activeTab === 'series'
+              ? 'bg-white text-black border-white shadow-md'
+              : 'bg-black/40 text-gray-200 border-white/20 hover:border-white/40 backdrop-blur'
+          }`}
+        >
+          TV Shows
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('movies');
+            setShowMobileFilters(false);
+          }}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
+            activeTab === 'movies'
+              ? 'bg-white text-black border-white shadow-md'
+              : 'bg-black/40 text-gray-200 border-white/20 hover:border-white/40 backdrop-blur'
+          }`}
+        >
+          Movies
+        </button>
+
+        <button
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1 ${
+            showMobileFilters || selectedMood !== 'all' || selectedDuration !== 'all'
+              ? 'bg-[#E50914] text-white border-[#E50914] shadow-md'
+              : 'bg-black/40 text-gray-200 border-white/20 hover:border-white/40 backdrop-blur'
+          }`}
+        >
+          <span>Categories</span>
+          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showMobileFilters ? 'rotate-90' : ''}`} />
+        </button>
+      </div>
+
+      {/* 1A. MOBILE NETFLIX-STYLE VERTICAL HERO CARD (Visible on Mobile/Tablet) */}
+      {featuredFilm && (
+        <section className="md:hidden px-4 py-2 mb-6">
+          <div className="relative aspect-[3/4] max-w-[340px] mx-auto rounded-[1.8rem] overflow-hidden border border-white/10 shadow-[0_16px_50px_rgba(0,0,0,0.9)] bg-[#0B0C10] group">
+            {/* Background Poster Image */}
+            <img
+              src={featuredFilm.thumbnail_url}
+              alt={featuredFilm.title}
+              className="w-full h-full object-cover scale-105"
+            />
+
+            {/* Top Gradient */}
+            <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent" />
+
+            {/* Bottom Immersive Gradient Mask */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/65 to-transparent z-10 flex flex-col justify-end p-5 text-center">
+              {/* Title & Underline effect */}
+              <div className="space-y-1 mb-2">
+                <h1 className="text-2xl font-extrabold uppercase tracking-tight text-white drop-shadow-md">
+                  {featuredFilm.title}
+                </h1>
+                <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-[#E50914] to-transparent mx-auto" />
+                <p className="text-[11px] text-[#FFD60A] font-semibold tracking-wide">
+                  New episode coming on Sunday
+                </p>
+              </div>
+
+              {/* Tag pill list */}
+              <div className="flex flex-wrap items-center justify-center gap-1.5 text-[9px] font-medium text-gray-300 mb-4 px-2">
+                <span>Riveting</span>
+                <span>•</span>
+                <span>Drama</span>
+                <span>•</span>
+                <span>{featuredFilm.mood_tag.toUpperCase()}</span>
+                <span>•</span>
+                <span>Workplace</span>
+                <span>•</span>
+                <span>TV</span>
+              </div>
+
+              {/* Action Buttons: Play (White) and + My List (Grey) */}
+              <div className="flex items-center gap-3">
+                <Link
+                  href={`/film/${featuredFilm.id}`}
+                  className="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold text-xs py-2.5 px-4 rounded-md flex items-center justify-center gap-1.5 transition-transform active:scale-95 shadow-lg"
+                >
+                  <Play className="w-4 h-4 fill-current text-black" />
+                  <span>Play</span>
+                </Link>
+
+                <Link
+                  href={`/film/${featuredFilm.id}`}
+                  className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-extrabold text-xs py-2.5 px-4 rounded-md flex items-center justify-center gap-1.5 border border-white/20 transition-transform active:scale-95 shadow-lg"
+                >
+                  <Plus className="w-4 h-4 text-white" />
+                  <span>My List</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 1B. DESKTOP CINEMATIC HERO BANNER (Visible on md and larger) */}
       {featuredFilm ? (
-        <section className="relative w-full min-h-[55vh] sm:min-h-[70vh] flex items-center justify-center overflow-hidden mb-12 border-b border-gray-900 shadow-2xl">
-          {/* Film Thumbnail Background with multi-stage gradient masks */}
+        <section className="hidden md:flex relative w-full min-h-[55vh] sm:min-h-[70vh] items-center justify-center overflow-hidden mb-12 border-b border-gray-900 shadow-2xl">
           <div className="absolute inset-0 z-0">
             <img
               src={featuredFilm.thumbnail_url}
               alt={featuredFilm.title}
-              className="w-full h-full object-cover opacity-50 lg:opacity-35 scale-105 transition-transform duration-[10s]"
+              className="w-full h-full object-cover opacity-35 scale-105 transition-transform duration-[10s]"
             />
-            {/* Mobile Vertical linear gradient + Desktop Radial/Horizontal mask */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/85 to-[#0B0C10]/20 lg:hidden z-10" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0B0C10] via-[#0B0C10]/80 to-transparent hidden lg:block z-10" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-transparent to-[#0B0C10]/40 hidden lg:block z-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0B0C10] via-[#0B0C10]/80 to-transparent z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-transparent to-[#0B0C10]/40 z-10" />
           </div>
 
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-20 relative z-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left Description Column */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left flex flex-col items-center lg:items-start">
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+            <div className="lg:col-span-7 space-y-6 text-left flex flex-col items-start">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="bg-[#E63946] text-white font-black text-[9px] tracking-widest uppercase px-3 py-1 rounded-md flex items-center gap-1 shadow-[0_0_15px_rgba(230,57,70,0.4)]">
                   <Flame className="w-3.5 h-3.5 fill-current" /> MASS TRENDING RELEASE
                 </span>
-                <span className="bg-[#FFD60A]/10 border border-[#FFD60A]/30 text-[#FFD60A] text-[9px] sm:text-xs font-black px-3 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm">
+                <span className="bg-[#FFD60A]/10 border border-[#FFD60A]/30 text-[#FFD60A] text-xs font-black px-3 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm">
                   ★ {featuredFilm.rating_avg.toFixed(1)} AUDIENCE SCORE
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black tracking-tight uppercase leading-none drop-shadow-lg text-center lg:text-left bg-gradient-to-r from-white via-white to-[#FFD60A] bg-clip-text text-transparent">
+              <h1 className="text-5xl lg:text-7xl font-black tracking-tight uppercase leading-none drop-shadow-lg text-left bg-gradient-to-r from-white via-white to-[#FFD60A] bg-clip-text text-transparent">
                 {featuredFilm.title}
               </h1>
 
-              <p className="text-gray-350 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl font-medium drop-shadow text-center lg:text-left">
+              <p className="text-gray-300 text-sm md:text-base leading-relaxed max-w-2xl font-medium drop-shadow text-left">
                 {featuredFilm.overview}
               </p>
 
-              {/* Badges and metadata */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-2 text-[9px] sm:text-xs font-bold text-gray-300 bg-[#0B0C10]/60 p-3 rounded-xl border border-white/5 backdrop-blur-md">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-bold text-gray-300 bg-[#0B0C10]/60 p-3 rounded-xl border border-white/5 backdrop-blur-md">
                 <div className="flex items-center gap-1 text-[#FFD60A]">
                   <Clapperboard className="w-3.5 h-3.5" />
                   <span>DIRECTOR: <strong className="text-white uppercase font-black">{featuredFilm.director_name}</strong></span>
                 </div>
-                <span className="text-gray-600 hidden sm:inline">•</span>
+                <span className="text-gray-600">•</span>
                 <div className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="truncate max-w-[140px] sm:max-w-[200px]">CAST: <strong className="text-gray-200">{featuredFilm.hero_names.join(', ')}</strong></span>
+                  <span className="truncate max-w-[200px]">CAST: <strong className="text-gray-200">{featuredFilm.hero_names.join(', ')}</strong></span>
                 </div>
-                <span className="text-gray-600 hidden sm:inline">•</span>
+                <span className="text-gray-600">•</span>
                 <div className="flex items-center gap-1 text-[#FFD60A]">
                   <Clock className="w-3.5 h-3.5" />
                   <span>{Math.round(featuredFilm.duration_sec / 60)} MIN SHORT</span>
                 </div>
               </div>
 
-              {/* Side by side action buttons on mobile */}
-              <div className="pt-2 flex flex-row items-center justify-center lg:justify-start gap-3 w-full sm:w-auto">
+              <div className="pt-2 flex flex-row items-center gap-3">
                 <Link
                   href={`/film/${featuredFilm.id}`}
-                  className="flex-1 sm:flex-none btn-gold text-[10px] sm:text-xs font-black px-4 sm:px-8 py-3.5 shadow-[0_0_25px_rgba(255,214,10,0.25)] flex items-center justify-center gap-1.5 hover:scale-105 active:scale-95 transition-transform rounded-xl"
+                  className="btn-gold text-xs font-black px-8 py-3.5 shadow-[0_0_25px_rgba(255,214,10,0.25)] flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-transform rounded-xl"
                 >
                   <Play className="w-4 h-4 fill-current text-[#0B0C10]" />
                   <span>STREAM NOW</span>
@@ -147,37 +261,30 @@ export default function HomeFeedPage() {
 
                 <Link
                   href={`/director/${featuredFilm.director_id}`}
-                  className="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm px-4 sm:px-6 py-3.5 rounded-xl text-[10px] sm:text-xs font-black tracking-wider uppercase transition-colors text-center"
+                  className="bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm px-6 py-3.5 rounded-xl text-xs font-black tracking-wider uppercase transition-colors text-center"
                 >
                   <span>DIRECTOR VAULT</span>
                 </Link>
               </div>
             </div>
 
-            {/* Right Interactive Player Box (Hidden on Mobile/Tablet for clean layout, premium effects on Desktop) */}
-            <div className="hidden lg:block lg:col-span-5 relative group rounded-2xl overflow-hidden border border-white/10 hover:border-[#FFD60A]/40 bg-[#0B0C10] shadow-[0_0_50px_rgba(0,0,0,0.8)] hover:shadow-[0_0_40px_rgba(255,214,10,0.25)] transition-all duration-500">
+            <div className="lg:col-span-5 relative group rounded-2xl overflow-hidden border border-white/10 hover:border-[#FFD60A]/40 bg-[#0B0C10] shadow-[0_0_50px_rgba(0,0,0,0.8)] transition-all duration-500">
               <div className="aspect-video relative overflow-hidden">
                 <img
                   src={featuredFilm.thumbnail_url}
                   alt={featuredFilm.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                
-                {/* Glowing border outline */}
-                <div className="absolute inset-0 border border-transparent group-hover:border-[#FFD60A]/20 rounded-2xl pointer-events-none transition-all duration-500" />
-                
-                {/* Premium tag */}
                 <div className="absolute top-3 right-3 z-10">
-                  <span className="bg-[#0B0C10]/80 border border-[#FFD60A]/40 text-[#FFD60A] text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-md backdrop-blur-md shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+                  <span className="bg-[#0B0C10]/80 border border-[#FFD60A]/40 text-[#FFD60A] text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-md backdrop-blur-md">
                     Featured Trailer
                   </span>
                 </div>
-
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-transparent to-transparent opacity-60" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Link
                     href={`/film/${featuredFilm.id}`}
-                    className="w-16 h-16 rounded-full bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] flex items-center justify-center pl-1 shadow-[0_0_20px_rgba(255,214,10,0.4)] group-hover:shadow-[0_0_35px_rgba(255,214,10,0.7)] group-hover:scale-110 transition-all duration-300 relative z-10"
+                    className="w-16 h-16 rounded-full bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] flex items-center justify-center pl-1 shadow-[0_0_20px_rgba(255,214,10,0.4)] group-hover:scale-110 transition-all"
                   >
                     <Play className="w-8 h-8 fill-current text-[#0B0C10]" />
                   </Link>
@@ -187,28 +294,58 @@ export default function HomeFeedPage() {
           </div>
         </section>
       ) : (
-        /* Empty State banner placeholder */
         <section className="relative w-full py-16 bg-[#1F2833]/20 border-b border-gray-900 text-center space-y-4">
           <div className="max-w-md mx-auto space-y-2 px-4">
             <Tv className="w-12 h-12 text-[#FFD60A] mx-auto animate-pulse" />
             <h2 className="text-lg font-black text-white uppercase tracking-wider">Awaiting Theater Uploads</h2>
             <p className="text-xs text-gray-400">
-              There are currently no approved short films in the catalog. Log in as an administrator to publish files.
+              There are currently no approved short films in the catalog.
             </p>
-            <div className="pt-2">
-              <Link href="/login" className="btn-gold text-xs px-5 py-2 inline-block font-bold">
-                Go to login
-              </Link>
-            </div>
           </div>
         </section>
       )}
 
-      {/* 2. MAIN FEED AND CAROUSELS */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      {/* 2. MORE OTT APPS COMING SOON ROW */}
+      <div className="max-w-7xl mx-auto px-4 mb-8">
+        <h3 className="text-xs font-extrabold text-gray-300 tracking-wider mb-3 select-none">
+          More OTT Apps Coming Soon
+        </h3>
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+          {/* Netflix */}
+          <div className="w-28 h-16 rounded-xl bg-gradient-to-br from-[#141414] to-[#000000] border border-[#E50914]/40 flex flex-col items-center justify-center shrink-0 shadow-[0_4px_15px_rgba(229,9,20,0.2)] hover:scale-105 transition-transform cursor-pointer">
+            <span className="text-[#E50914] font-black text-xl tracking-tighter drop-shadow-[0_0_8px_rgba(229,9,20,0.6)]">
+              NETFLIX
+            </span>
+          </div>
+
+          {/* Prime Video */}
+          <div className="w-28 h-16 rounded-xl bg-gradient-to-br from-[#00A8E1]/20 to-[#001E2B] border border-[#00A8E1]/40 flex flex-col items-center justify-center shrink-0 shadow-[0_4px_15px_rgba(0,168,225,0.2)] hover:scale-105 transition-transform cursor-pointer">
+            <span className="text-[#00A8E1] font-black text-xs tracking-wider">
+              prime video
+            </span>
+          </div>
+
+          {/* Disney+ */}
+          <div className="w-28 h-16 rounded-xl bg-gradient-to-br from-[#113CCF]/20 to-[#040B29] border border-[#113CCF]/40 flex flex-col items-center justify-center shrink-0 shadow-[0_4px_15px_rgba(17,60,207,0.2)] hover:scale-105 transition-transform cursor-pointer">
+            <span className="text-white font-black text-sm italic tracking-widest">
+              Disney<span className="text-[#0A84FF] font-normal text-xs">+</span>
+            </span>
+          </div>
+
+          {/* CineShort Pro */}
+          <div className="w-28 h-16 rounded-xl bg-gradient-to-br from-[#FFD60A]/20 to-[#1F2833] border border-[#FFD60A]/50 flex flex-col items-center justify-center shrink-0 shadow-[0_4px_15px_rgba(255,214,10,0.25)] hover:scale-105 transition-transform cursor-pointer">
+            <span className="text-[#FFD60A] font-black text-xs tracking-widest uppercase">
+              CineShort
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. MAIN FEED AND CAROUSELS */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         
-        {/* Floating glassmorphism filters panel */}
-        <div className="bg-[#1F2833]/45 border border-white/5 backdrop-blur-md p-5 rounded-2xl shadow-xl space-y-5">
+        {/* Mobile Toggleable Filters or Desktop Always Visible Panel */}
+        <div className={`bg-[#1F2833]/45 border border-white/5 backdrop-blur-md p-5 rounded-2xl shadow-xl space-y-5 ${showMobileFilters ? 'block' : 'hidden md:block'}`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
             <div>
               <div className="inline-flex items-center gap-1.5 text-[#FFD60A] text-[10px] font-black uppercase tracking-widest mb-0.5">
@@ -226,22 +363,10 @@ export default function HomeFeedPage() {
                 <span>Director Vaults</span>
                 <ChevronRight className="w-4 h-4" />
               </Link>
-
-              {topDirector && (
-                <Link
-                  href={`/director/${topDirector.id}`}
-                  className="hidden sm:flex items-center gap-2 bg-[#0B0C10] hover:bg-[#0B0C10]/80 border border-white/5 px-4 py-2 rounded-xl text-xs font-semibold text-gray-300 transition-colors"
-                >
-                  <Trophy className="w-4 h-4 text-[#FFD60A]" />
-                  <span>Rank #1: <strong className="text-[#FFD60A]">{topDirector.name}</strong></span>
-                </Link>
-              )}
             </div>
           </div>
 
-          {/* Filters Selector pills bar */}
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            {/* Mood Category selection */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full lg:w-auto pb-1 lg:pb-0">
               <span className="text-[10px] font-extrabold text-gray-400 shrink-0 uppercase tracking-widest mr-1">
                 Mood:
@@ -252,7 +377,7 @@ export default function HomeFeedPage() {
                   onClick={() => setSelectedMood(chip.value)}
                   className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all shrink-0 flex items-center gap-2 ${
                     selectedMood === chip.value
-                      ? 'bg-[#FFD60A] text-[#0B0C10] font-black shadow-[0_0_15px_rgba(255,214,10,0.2)] scale-105'
+                      ? 'bg-[#E50914] text-white font-black shadow-md scale-105'
                       : 'bg-[#0B0C10] text-gray-300 hover:text-white hover:bg-white/5 border border-white/5'
                   }`}
                 >
@@ -262,7 +387,6 @@ export default function HomeFeedPage() {
               ))}
             </div>
 
-            {/* Runtime Category Selection */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full lg:w-auto">
               <span className="text-[10px] font-extrabold text-gray-400 shrink-0 uppercase tracking-widest mr-1 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-[#FFD60A]" /> Runtime:
@@ -284,23 +408,23 @@ export default function HomeFeedPage() {
           </div>
         </div>
 
-        {/* 3. SHOWCASE ROWS OR FILTER RESULTS */}
-        {selectedMood === 'all' && selectedDuration === 'all' ? (
-          <div className="space-y-12">
+        {/* SHOWCASE ROWS OR FILTER RESULTS */}
+        {selectedMood === 'all' && selectedDuration === 'all' && activeTab === 'all' ? (
+          <div className="space-y-10">
             {/* Row 1: Trending Blockbusters */}
             {trendingFilms.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+                <div className="flex items-center justify-between border-l-[3px] border-[#E50914] pl-3">
                   <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
-                    <Flame className="w-4.5 h-4.5 text-[#FFD60A] fill-current" />
+                    <Flame className="w-4.5 h-4.5 text-[#E50914] fill-current" />
                     <span>Trending Mass Blockbusters</span>
                   </h2>
                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{trendingFilms.length} Movies</span>
                 </div>
 
-                <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
+                <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
                   {trendingFilms.map((film) => (
-                    <div key={film.id} className="w-[260px] sm:w-[300px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
+                    <div key={film.id} className="w-[240px] sm:w-[280px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
                       <FilmCard film={film} />
                     </div>
                   ))}
@@ -311,7 +435,7 @@ export default function HomeFeedPage() {
             {/* Row 2: Action & Suspense Thrillers */}
             {thrillerDarkFilms.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+                <div className="flex items-center justify-between border-l-[3px] border-[#E50914] pl-3">
                   <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
                     <Sparkles className="w-4.5 h-4.5 text-[#FFD60A]" />
                     <span>Action & Suspense Thrillers</span>
@@ -319,9 +443,9 @@ export default function HomeFeedPage() {
                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{thrillerDarkFilms.length} Movies</span>
                 </div>
 
-                <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
+                <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
                   {thrillerDarkFilms.map((film) => (
-                    <div key={film.id} className="w-[260px] sm:w-[300px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
+                    <div key={film.id} className="w-[240px] sm:w-[280px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
                       <FilmCard film={film} />
                     </div>
                   ))}
@@ -340,9 +464,9 @@ export default function HomeFeedPage() {
                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{upliftingRomanceFilms.length} Movies</span>
                 </div>
 
-                <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
+                <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
                   {upliftingRomanceFilms.map((film) => (
-                    <div key={film.id} className="w-[260px] sm:w-[300px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
+                    <div key={film.id} className="w-[240px] sm:w-[280px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
                       <FilmCard film={film} />
                     </div>
                   ))}
@@ -350,41 +474,20 @@ export default function HomeFeedPage() {
               </div>
             )}
 
-            {/* Row 4: Blockbuster Comedies */}
-            {comedyFilms.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
-                  <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
-                    <Trophy className="w-4.5 h-4.5 text-[#FFD60A]" />
-                    <span>Blockbuster Comedies</span>
-                  </h2>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{comedyFilms.length} Movies</span>
-                </div>
-
-                <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
-                  {comedyFilms.map((film) => (
-                    <div key={film.id} className="w-[260px] sm:w-[300px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
-                      <FilmCard film={film} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Row 5: Fresh Releases */}
+            {/* Row 4: Fresh Releases */}
             {freshReleases.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+                <div className="flex items-center justify-between border-l-[3px] border-white pl-3">
                   <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
-                    <Clock className="w-4.5 h-4.5 text-[#FFD60A]" />
+                    <Clock className="w-4.5 h-4.5 text-white" />
                     <span>Fresh New Releases</span>
                   </h2>
                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{freshReleases.length} Movies</span>
                 </div>
 
-                <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
+                <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
                   {freshReleases.map((film) => (
-                    <div key={film.id} className="w-[260px] sm:w-[300px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
+                    <div key={film.id} className="w-[240px] sm:w-[280px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
                       <FilmCard film={film} />
                     </div>
                   ))}
@@ -395,12 +498,12 @@ export default function HomeFeedPage() {
         ) : (
           /* Filtered Results Grid */
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-l-[3px] border-[#FFD60A] pl-3">
+            <div className="flex items-center justify-between border-l-[3px] border-[#E50914] pl-3">
               <h2 className="font-black text-sm sm:text-base text-white uppercase tracking-wider">
-                Search Results
+                {activeTab === 'series' ? 'TV Shows & Series' : activeTab === 'movies' ? 'Movies & Shorts' : 'Filter Results'}
               </h2>
               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                {filteredFilms.length} {filteredFilms.length === 1 ? 'Movie' : 'Movies'} Found
+                {filteredFilms.length} {filteredFilms.length === 1 ? 'Film' : 'Films'} Found
               </span>
             </div>
 
@@ -415,12 +518,16 @@ export default function HomeFeedPage() {
                 <span className="text-3xl">🍿</span>
                 <h3 className="font-bold text-sm text-white uppercase tracking-wider">No Matches Found</h3>
                 <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                  We couldn't find any films matching the selected mood and duration. Choose different filter combinations.
+                  We couldn't find any films matching the selected filters. Choose different combinations.
                 </p>
                 <div className="pt-2">
                   <button
-                    onClick={() => { setSelectedMood('all'); setSelectedDuration('all'); }}
-                    className="btn-gold text-xs px-4 py-2 font-bold"
+                    onClick={() => { 
+                      setSelectedMood('all'); 
+                      setSelectedDuration('all');
+                      setActiveTab('all');
+                    }}
+                    className="bg-[#E50914] text-white text-xs px-4 py-2 font-bold rounded-lg"
                   >
                     Reset Filters
                   </button>
@@ -430,6 +537,27 @@ export default function HomeFeedPage() {
           </div>
         )}
       </div>
+
+      {/* 4. FLOATING SETTINGS GEAR BUTTON (Mobile Screen Right Side) */}
+      <Link
+        href="/profile"
+        className="md:hidden fixed bottom-20 right-4 z-40 bg-[#1F2833]/90 hover:bg-[#1F2833] text-white p-3.5 rounded-full border border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.6)] backdrop-blur-md active:scale-95 transition-all flex items-center justify-center"
+        aria-label="Settings"
+      >
+        <Settings className="w-5 h-5 text-gray-200 animate-spin-slow" />
+      </Link>
     </div>
+  );
+}
+
+export default function HomeFeedPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center text-gray-400 text-xs">
+        Loading CineShort...
+      </div>
+    }>
+      <HomeFeedContent />
+    </Suspense>
   );
 }
