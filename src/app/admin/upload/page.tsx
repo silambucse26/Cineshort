@@ -126,10 +126,10 @@ export default function AdminUploadMoviePage() {
       video_source: isYt ? 'youtube' : 'drive',
       video_fallback_url: isYt 
         ? `https://www.youtube.com/watch?v=${ytId}` 
-        : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+        : (selectedFile ? URL.createObjectURL(selectedFile) : driveLink || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'),
       thumbnail_url: thumb,
       overview: overview.trim() || 'Short film uploaded via Admin Management Panel.',
-      status: initialStatus,
+      status: initialStatus || 'approved',
     });
 
     setUploadProgress(100);

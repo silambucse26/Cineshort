@@ -208,6 +208,7 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               hero_names: filmHeroes.length > 0 ? filmHeroes : ['Independent Cast'],
               video_fallback_url: f.video_fallback_url || f.drive_link,
               thumbnail_url: f.thumbnail_url || 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80',
+              status: f.status || 'approved',
             };
           });
           setFilms(mapped);
@@ -410,9 +411,9 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
     const newId = isSupabaseConfigured ? crypto.randomUUID() : `film-${Date.now()}`;
     const rawFallback = filmData.video_fallback_url;
-    const isInvalidFallback = !rawFallback || rawFallback.startsWith('blob:') || rawFallback.includes('drive.google.com');
+    const isInvalidFallback = !rawFallback || rawFallback.includes('drive.google.com');
     const safeFallback = isInvalidFallback 
-      ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4' 
+      ? (filmData.drive_link && filmData.drive_link.includes('drive.google.com') ? filmData.drive_link : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4')
       : rawFallback;
 
     const publishedFilm: ShortFilm = {
@@ -421,7 +422,7 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       video_fallback_url: safeFallback,
       rating_avg: 5.0,
       rating_count: 1,
-      status: filmData.status || 'pending',
+      status: filmData.status || 'approved',
       upload_date: new Date().toISOString().split('T')[0],
       views_count: 1,
       likes_count: 1,
@@ -495,9 +496,9 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               drive_link: filmData.drive_link,
               rating_avg: 5.0,
               rating_count: 1,
-              status: filmData.status || 'pending',
+              status: filmData.status || 'approved',
               thumbnail_url: filmData.thumbnail_url || '',
-              video_fallback_url: filmData.video_fallback_url || '',
+              video_fallback_url: safeFallback,
               video_source: filmData.video_source || 'drive',
               youtube_url: filmData.youtube_url || '',
               youtube_id: filmData.youtube_id || ''

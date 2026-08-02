@@ -225,7 +225,7 @@ export default function UploadFlowPage() {
         video_source: isYt ? 'youtube' : 'drive',
         video_fallback_url: isYt 
           ? `https://www.youtube.com/watch?v=${youtubeId}` 
-          : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+          : (selectedFile ? URL.createObjectURL(selectedFile) : driveDetails?.previewLink || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'),
         thumbnail_url: thumb,
         overview: overview.trim() || 'A captivating short film uploaded by an independent filmmaker.',
         status: 'approved',

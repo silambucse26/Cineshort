@@ -5,30 +5,17 @@
 export function isSampleOrInvalidDriveUrl(url?: string): boolean {
   if (!url) return true;
   
-  // If it's not a google drive link, it's not a google drive link
   if (!url.includes('drive.google.com')) return false;
 
-  // Known placeholder/sample patterns or broken/simulated test drive file IDs
+  // Known placeholder/sample demo patterns
   const sampleIdentifiers = [
-    'SampleDriveId',
-    'PendingDriveId',
-    'simulated',
-    'drive-',
-    'sample-',
-    '1qhj4FV7KJIq_NI2amVZIceo_kd2obsfa', // non-existent demo file
+    '1Bzi-KXJ_05sX1J5T_SampleDriveId1',
+    '1Azi-KXJ_05sX2J5T_SampleDriveId2',
+    '1qhj4FV7KJIq_NI2amVZIceo_kd2obsfa',
   ];
 
   if (sampleIdentifiers.some((identifier) => url.includes(identifier))) {
     return true;
-  }
-
-  // Extract ID from drive link
-  const match = url.match(/\/d\/([^\/]+)/);
-  if (match && match[1]) {
-    const id = match[1];
-    if (id.startsWith('drive-') || id.startsWith('sample-') || id.length < 25) {
-      return true;
-    }
   }
 
   return false;

@@ -73,8 +73,8 @@ export async function uploadVideoToGoogleDrive(
  */
 function generateDriveFileId(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
-  let result = 'simulated_';
-  for (let i = 0; i < 24; i++) {
+  let result = '1';
+  for (let i = 0; i < 32; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
