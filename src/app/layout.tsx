@@ -5,8 +5,8 @@ import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "CineShort – Short-Film Discovery Platform for Young Directors & Actors",
-  description: "Discover micro-short films by mood and duration, rate top young directors, post verified celebrity comments, and watch embedded Google Drive cinema.",
-  keywords: ["short film", "directors", "actors", "cinema", "indie film", "google drive video", "leaderboard"],
+  description: "Discover micro-short films by mood and duration, rate top young directors, post verified celebrity comments, and watch short film cinema.",
+  keywords: ["short film", "directors", "actors", "cinema", "indie film", "leaderboard"],
   authors: [{ name: "CineShort Team" }],
 };
 
@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased dark">
-      <body className="min-h-full bg-[#0B0C10] text-[#F5F5F5] flex flex-col selection:bg-[#F4A300] selection:text-[#0B0C10]">
+      <body className="min-h-full bg-[#0B0C10] text-[#F5F5F5] flex flex-col selection:bg-[#FFD60A] selection:text-[#0B0C10]">
         <ShortFilmProvider>
           {/* Header acts as left vertical sidebar on desktop, bottom navigation on mobile */}
           <Header />
@@ -32,18 +32,15 @@ export default function RootLayout({
               {children}
             </main>
 
-            {/* Minimal Cinematic Footer */}
+            {/* Minimal Premium Footer */}
             <footer className="bg-[#0B0C10] border-t border-[#1F2833] py-8 px-4 sm:px-6 lg:px-8 text-center text-xs text-gray-400">
               <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2 font-bold text-[#F5F5F5] tracking-wider">
-                  <span className="text-[#FFD60A] text-base font-black">CINESHORT</span>
+                  <span className="text-[#FFD60A] text-base font-black uppercase">CINESHORT</span>
                   <span className="text-[10px] text-gray-500 font-normal">Short-Film Platform</span>
                 </div>
-                <div className="flex items-center gap-6 text-xs text-gray-400">
-                  <span>Design System: #0B0C10 | #1F2833 | #F4A300 | #E63946 | #FFD60A</span>
-                </div>
-                <div className="text-[11px] text-gray-500">
-                  © {new Date().getFullYear()} CineShort. Powered by Google Drive Video API.
+                <div className="text-[11px] text-gray-400 font-medium">
+                  © {new Date().getFullYear()} CineShort. All rights reserved.
                 </div>
               </div>
             </footer>

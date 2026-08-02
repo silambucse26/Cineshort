@@ -26,12 +26,10 @@ import {
 } from 'lucide-react';
 import { useShortFilm } from '../context/ShortFilmContext';
 
-export const RedRibbonLogo: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
-  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M25 15V85" stroke="#B20710" strokeWidth="16" strokeLinecap="round" />
-    <path d="M75 15V85" stroke="#B20710" strokeWidth="16" strokeLinecap="round" />
-    <path d="M25 15L75 85" stroke="#E50914" strokeWidth="16" strokeLinecap="round" className="drop-shadow-[0_0_12px_rgba(229,9,20,0.8)]" />
-  </svg>
+export const CineShortLogo: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
+  <div className={`rounded-xl bg-gradient-to-tr from-[#F4A300] to-[#FFD60A] text-[#0B0C10] flex items-center justify-center font-black shadow-[0_0_14px_rgba(255,214,10,0.45)] ${className}`}>
+    <Film className="w-[60%] h-[60%] fill-current text-[#0B0C10]" />
+  </div>
 );
 
 export const Header: React.FC = () => {
@@ -84,9 +82,7 @@ export const Header: React.FC = () => {
         {/* Brand Logo Section */}
         <div className="w-full px-4 flex justify-start items-center overflow-hidden">
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <div className="w-12 h-12 rounded-xl bg-[#FFD60A] text-[#0B0C10] flex items-center justify-center font-black shadow-md hover:rotate-6 transition-transform">
-              <Film className="w-6 h-6 fill-current" />
-            </div>
+            <CineShortLogo className="w-11 h-11" />
             <div className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 select-none">
               <span className="text-sm font-black tracking-tight text-[#F5F5F5] block">
                 CINE<span className="text-[#FFD60A]">SHORT</span>
@@ -300,52 +296,50 @@ export const Header: React.FC = () => {
       <nav 
         className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0B0C10]/95 border-t border-white/10 flex justify-around items-center z-50 px-2 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.8)] select-none"
       >
-        {/* Mobile Home */}
+        {/* 1. Mobile Home */}
         <Link
           href="/"
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
-            pathname === '/' ? 'text-white font-bold' : 'text-gray-400 hover:text-white'
+            pathname === '/' ? 'text-[#FFD60A] font-bold' : 'text-gray-400 hover:text-white'
           }`}
         >
           <Home className="w-5 h-5" />
           <span className="text-[9px] font-bold tracking-wider">Home</span>
         </Link>
 
-        {/* Mobile Series */}
+        {/* 2. Mobile Directors Collection / Vault */}
         <Link
-          href="/?type=series"
+          href="/directors"
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
-            pathname === '/' ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-white'
+            pathname === '/directors' ? 'text-[#FFD60A] font-bold' : 'text-gray-400 hover:text-white'
           }`}
         >
-          <Tv className="w-5 h-5" />
-          <span className="text-[9px] font-bold tracking-wider">Series</span>
+          <Clapperboard className="w-5 h-5" />
+          <span className="text-[9px] font-bold tracking-wider">Vault</span>
         </Link>
 
-        {/* Mobile Center Brand Logo (Red N Ribbon) */}
+        {/* 3. Mobile Center Brand Logo (CineShort Application Logo) */}
         <Link
           href="/"
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-full hover:scale-110 active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center py-1 px-2.5 hover:scale-110 active:scale-95 transition-transform"
         >
-          <RedRibbonLogo className="w-8 h-8" />
+          <CineShortLogo className="w-9 h-9" />
         </Link>
 
-        {/* Mobile Movies */}
-        <Link
-          href="/?type=movies"
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
-            pathname === '/' ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-white'
-          }`}
+        {/* 4. Mobile Search Trigger */}
+        <button
+          onClick={() => setIsSearchOpen(true)}
+          className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg text-gray-400 hover:text-white transition-colors"
         >
-          <Film className="w-5 h-5" />
-          <span className="text-[9px] font-bold tracking-wider">Movies</span>
-        </Link>
+          <Search className="w-5 h-5" />
+          <span className="text-[9px] font-bold tracking-wider">Search</span>
+        </button>
 
-        {/* Mobile Setting / Profile Link */}
+        {/* 5. Mobile Setting / Profile Link */}
         <Link
           href="/profile"
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
-            pathname === '/profile' ? 'text-white font-bold' : 'text-gray-400 hover:text-white'
+            pathname === '/profile' ? 'text-[#FFD60A] font-bold' : 'text-gray-400 hover:text-white'
           }`}
         >
           <Settings className="w-5 h-5" />
@@ -358,22 +352,25 @@ export const Header: React.FC = () => {
         className="md:hidden fixed top-0 left-0 right-0 h-14 bg-gradient-to-b from-[#0B0C10]/95 to-[#0B0C10]/80 border-b border-white/5 flex items-center justify-between px-4 z-40 backdrop-blur-md shadow-md"
       >
         <Link href="/" className="flex items-center gap-2 group">
-          <RedRibbonLogo className="w-7 h-7 group-hover:scale-105 transition-transform" />
+          <CineShortLogo className="w-8 h-8 group-hover:scale-105 transition-transform" />
+          <span className="text-xs font-black tracking-wider text-[#F5F5F5] uppercase">
+            CINE<span className="text-[#FFD60A]">SHORT</span>
+          </span>
         </Link>
 
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsSearchOpen(true)}
-            className="p-1.5 text-gray-300 hover:text-white active:scale-95 transition-all"
+            className="p-1.5 text-gray-300 hover:text-[#FFD60A] active:scale-95 transition-all"
             aria-label="Search short films"
           >
             <Search className="w-5 h-5" />
           </button>
 
-          {/* Red/Colored Profile Icon Trigger */}
+          {/* Profile Avatar Trigger */}
           <button
             onClick={handleProfileClick}
-            className="w-7 h-7 rounded bg-[#E50914] flex items-center justify-center overflow-hidden border border-white/20 shadow-md active:scale-95 transition-transform relative"
+            className="w-8 h-8 rounded-lg bg-[#FFD60A]/10 flex items-center justify-center overflow-hidden border border-[#FFD60A]/40 shadow-md active:scale-95 transition-transform relative"
             aria-label="Profile Menu"
           >
             <img

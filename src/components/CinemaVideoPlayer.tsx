@@ -30,7 +30,7 @@ const getSubtitleText = (time: number, lang: 'en' | 'es'): string => {
     { start: 9, end: 14, en: "With full application control, subtitle tracks, and quality settings.", es: "Con control completo de la aplicación, pistas de subtítulos y ajustes de calidad." },
     { start: 14, end: 19, en: "[Distant futuristic engines roaring]", es: "[Motores futuristas distantes rugiendo]" },
     { start: 19, end: 24, en: "We are tracking the target. Prepare for arrival.", es: "Estamos rastreando al objetivo. Prepárense para la llegada." },
-    { start: 24, end: 30, en: "All systems online. Enjoy the cinema experience!", es: "Todos los sistemas en línea. ¡Disfruta la experiencia cinematográfica!" }
+    { start: 24, end: 30, en: "All systems online. Enjoy the cinema experience!", es: "¡Todos los sistemas en línea. Disfruta la experiencia cinematográfica!" }
   ];
   
   const matched = dialogue.find(d => time >= d.start && time < d.end);
@@ -123,10 +123,8 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const ytPlayerRef = useRef<any>(null);
 
-  // Generate stable element ID for YouTube player iframe
   const ytDivId = useRef<string>(`yt-player-${Math.random().toString(36).substring(2, 9)}`);
 
-  // Determine actual video type
   const extractedYtId = youtubeId || extractYouTubeId(youtubeUrl || videoUrl || driveLink || '');
   const isYouTube = Boolean(extractedYtId) || videoSource === 'youtube';
 
@@ -135,7 +133,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   const isDrive = !isYouTube && (Boolean(driveLink) || (videoUrl && videoUrl.includes('drive.google.com')));
   const isSampleDrive = isDrive && isSampleOrInvalidDriveUrl(driveLink || videoUrl);
 
-  // Check if direct video source (MP4/WebM/Blob)
   const isDirectVideo = !isYouTube && (!isDrive || isSampleDrive || forceDirectPlayer);
 
   // State
@@ -150,7 +147,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   const [showControls, setShowControls] = useState(true);
   const [videoError, setVideoError] = useState(false);
 
-  // Subtitle & Quality Dropdown States and Refs
+  // Dropdown States
   const [showQualityDropdown, setShowQualityDropdown] = useState(false);
   const [showSubtitleDropdown, setShowSubtitleDropdown] = useState(false);
   const [activeSubtitle, setActiveSubtitle] = useState<'off' | 'en' | 'es'>('off');
@@ -173,7 +170,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     };
   }, []);
 
-  // Initial source calculation for HTML5 video
   const getInitialSrc = () => {
     if (isPlayableMediaUrl(videoUrl)) return videoUrl!;
     return SAMPLE_FALLBACK_VIDEO;
@@ -182,7 +178,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   const [activeVideoSrc, setActiveVideoSrc] = useState<string>(getInitialSrc);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize & Manage YouTube IFrame API Player
+  // YouTube IFrame API Initialization
   useEffect(() => {
     if (!isYouTube || !extractedYtId) return;
 
@@ -235,7 +231,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
         },
       });
 
-      // Ticker for current time and duration sync
       ticker = setInterval(() => {
         if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
           try {
@@ -257,7 +252,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     };
   }, [isYouTube, extractedYtId, durationSec]);
 
-  // Sync activeVideoSrc when videoUrl changes for direct videos
   useEffect(() => {
     if (isDirectVideo) {
       if (isPlayableMediaUrl(videoUrl)) {
@@ -268,7 +262,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }
   }, [videoUrl, isDirectVideo]);
 
-  // HTML5 Video element event listeners
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isDirectVideo) return;
@@ -300,7 +293,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     };
   }, [isDirectVideo, durationSec, activeVideoSrc]);
 
-  // Unified Play/Pause Handler for BOTH YouTube and Direct HTML5 Videos
   const togglePlay = () => {
     if (isYouTube && ytPlayerRef.current) {
       try {
@@ -346,7 +338,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }
   };
 
-  // Unified Seek Handler
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value);
     setCurrentTime(newTime);
@@ -358,7 +349,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }
   };
 
-  // Unified Skip 10s Handler
   const handleSkip = (seconds: number) => {
     const target = Math.max(0, Math.min(duration, currentTime + seconds));
     setCurrentTime(target);
@@ -370,7 +360,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }
   };
 
-  // Unified Volume Handler
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
     setVolume(val);
@@ -388,7 +377,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }
   };
 
-  // Unified Mute Toggle
   const toggleMute = () => {
     const nextMute = !isMuted;
     setIsMuted(nextMute);
@@ -403,7 +391,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }
   };
 
-  // Unified Playback Speed Handler
   const handleSpeedChange = (speed: number) => {
     setPlaybackRate(speed);
 
@@ -414,7 +401,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }
   };
 
-  // Fullscreen & Orientation Lock Handler
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
@@ -457,7 +443,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     };
   }, []);
 
-  // Mouse Move Control Hiding
   const handleMouseMove = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
@@ -466,63 +451,42 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     }, 3500);
   };
 
-  // Format Time (e.g., 01:02)
   const formatTime = (secs: number) => {
     if (isNaN(secs) || secs < 0) return '00:00';
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
     <div 
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      className={`card-flat overflow-hidden border-2 border-[#FFD60A]/40 shadow-[0_0_30px_rgba(255,214,10,0.15)] relative rounded-2xl bg-black group transition-all ${
-        isTheaterMode ? 'w-full max-w-full' : ''
-      } ${
-        isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen border-0 rounded-none' : ''
+      className={`w-full bg-[#0B0C10] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 transition-all duration-300 ${
+        isTheaterMode ? 'max-w-none' : 'max-w-5xl mx-auto'
       }`}
     >
-      <div className={`bg-black w-full relative flex items-center justify-center overflow-hidden ${
-        isFullscreen ? 'h-[calc(100vh-80px)]' : 'aspect-video'
-      }`}>
-        {/* YouTube Stream Mode via YouTube IFrame Player API (Controls = 0) */}
-        {isYouTube && extractedYtId ? (
-          <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
-            {/* The element where YouTube API injects clean, control-free iframe */}
-            {/* Wrapper to scale and crop out YouTube logo/title */}
-            <div className={`absolute pointer-events-none overflow-hidden flex items-center justify-center ${
-              isFullscreen 
-                ? 'w-[160%] h-[160%] -top-[30%] -left-[30%] md:w-[116%] md:h-[116%] md:-top-[8%] md:-left-[8%]' 
-                : 'w-[116%] h-[116%] -top-[8%] -left-[8%]'
-            }`}>
-              <div id={ytDivId.current} className="w-full h-full pointer-events-none" />
-            </div>
-
-            {/* Clickable Overlay to Toggle Play/Pause on YouTube Video */}
+      {/* Main Video Frame Box */}
+      <div 
+        ref={containerRef}
+        onMouseMove={handleMouseMove}
+        onTouchStart={handleMouseMove}
+        className={`relative w-full bg-black flex items-center justify-center overflow-hidden group select-none ${
+          isFullscreen 
+            ? 'h-screen w-screen fixed inset-0 z-[100]' 
+            : isTheaterMode 
+              ? 'aspect-video max-h-[82vh]' 
+              : 'aspect-video max-h-[70vh]'
+        }`}
+      >
+        {/* Stream Engine Renderer */}
+        {isYouTube ? (
+          <div className="w-full h-full relative pointer-events-none">
+            <div id={ytDivId.current} className="w-full h-full" />
             <div 
-              className="absolute inset-0 z-20 cursor-pointer"
+              className="absolute inset-0 z-10 cursor-pointer bg-transparent"
               onClick={togglePlay}
             />
-
-            {/* Big Center Play/Pause Overlay */}
-            {(!isPlaying || showControls) && (
-              <button
-                onClick={togglePlay}
-                className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] flex items-center justify-center shadow-[0_0_35px_rgba(255,214,10,0.9)] transition-all transform hover:scale-110 active:scale-95 z-30"
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? (
-                  <Pause className="w-10 h-10 fill-current" />
-                ) : (
-                  <Play className="w-10 h-10 fill-current ml-1.5" />
-                )}
-              </button>
-            )}
           </div>
         ) : isDrive && !isSampleDrive ? (
-          /* Google Drive Stream Mode */
           <iframe
             src={getDriveEmbedUrl(driveLink || videoUrl || '')}
             title={title}
@@ -531,7 +495,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
             allowFullScreen
           />
         ) : (
-          /* Custom Application-Controlled HTML5 Video Player */
           <div className="w-full h-full relative flex items-center justify-center bg-black">
             <video
               ref={videoRef}
@@ -545,121 +508,109 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
               onClick={togglePlay}
             />
 
-            {/* Error Notification Overlay */}
             {videoError && (
-              <div className="absolute top-4 right-4 bg-yellow-950/90 text-[#FFD60A] border border-[#FFD60A]/60 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 backdrop-blur-md shadow-lg z-20 font-bold">
-                <AlertTriangle className="w-4 h-4 text-[#FFD60A]" />
-                <span>Custom stream link unavailable. Active video updated to HD Cinema stream.</span>
+              <div className="absolute top-4 right-4 bg-yellow-950/90 text-[#FFD60A] border border-[#FFD60A]/60 px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-1.5 backdrop-blur-md shadow-lg z-20 font-bold">
+                <AlertTriangle className="w-3.5 h-3.5 text-[#FFD60A]" />
+                <span>Stream updated to HD source</span>
               </div>
-            )}
-
-            {/* Big Center Play/Pause Overlay */}
-            {(!isPlaying || showControls) && (
-              <button
-                onClick={togglePlay}
-                className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] flex items-center justify-center shadow-[0_0_35px_rgba(255,214,10,0.9)] transition-all transform hover:scale-110 active:scale-95 z-10"
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? (
-                  <Pause className="w-10 h-10 fill-current" />
-                ) : (
-                  <Play className="w-10 h-10 fill-current ml-1.5" />
-                )}
-              </button>
             )}
           </div>
         )}
 
-        {/* Custom Subtitles Overlay (Displays synchronized English/Spanish timed captions) */}
+        {/* Center Minimal Play/Pause Overlay Indicator (shows on pause or user tap) */}
+        {(!isPlaying || showControls) && (!isDrive || isSampleDrive) && (
+          <button
+            onClick={togglePlay}
+            className="absolute inset-0 m-auto w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] flex items-center justify-center shadow-[0_0_30px_rgba(255,214,10,0.8)] transition-transform transform active:scale-95 z-20 opacity-90 hover:opacity-100"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? (
+              <Pause className="w-7 h-7 sm:w-8 sm:h-8 fill-current" />
+            ) : (
+              <Play className="w-7 h-7 sm:w-8 sm:h-8 fill-current ml-1" />
+            )}
+          </button>
+        )}
+
+        {/* Subtitles Overlay */}
         {activeSubtitle !== 'off' && (
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 max-w-[85%] text-center pointer-events-none">
-            <span className="bg-[#0B0C10]/90 text-[#F5F5F5] font-bold text-xs sm:text-sm md:text-base px-4 py-2 rounded-xl border border-[#FFD60A]/35 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.5)] leading-relaxed inline-block select-none animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute bottom-16 sm:bottom-20 left-1/2 transform -translate-x-1/2 z-30 max-w-[85%] text-center pointer-events-none">
+            <span className="bg-black/85 text-white font-bold text-xs sm:text-sm px-3.5 py-1.5 rounded-lg border border-[#FFD60A]/30 backdrop-blur-md shadow-md leading-relaxed inline-block">
               {getSubtitleText(currentTime, activeSubtitle)}
             </span>
           </div>
         )}
-      </div>
 
-      {/* Yellow Application Control Bar (Active for BOTH YouTube & Direct Videos) */}
-      <div className="bg-[#0B0C10] px-4 py-3 border-t border-[#FFD60A]/40 flex flex-col gap-2.5 text-xs select-none">
-        {/* Custom Yellow Progress Bar (Works for YouTube and Direct Videos) */}
-        {!isDrive || isSampleDrive ? (
-          <div className="flex items-center gap-3 w-full">
-            <span className="text-[#FFD60A] font-mono font-bold text-xs">
-              {formatTime(currentTime)}
-            </span>
-            <div className="relative flex-1 flex items-center group/scrub">
-              <input
-                type="range"
-                min="0"
-                max={duration || 100}
-                step="0.1"
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-[#FFD60A] hover:h-2 transition-all"
-              />
-              <div 
-                className="absolute left-0 top-0 bottom-0 bg-[#FFD60A] rounded-lg pointer-events-none shadow-[0_0_10px_#FFD60A]"
-                style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-              />
+        {/* SLEEK IN-VIDEO FLOATING OVERLAY CONTROLS (Small Icons, Bottom Aligned) */}
+        {(!isDrive || isSampleDrive) && (
+          <div 
+            className={`absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-8 pb-3 px-3.5 sm:px-5 flex flex-col gap-2 transition-opacity duration-300 ${
+              showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            {/* Minimal Progress Bar */}
+            <div className="flex items-center gap-2.5 w-full">
+              <span className="text-[#FFD60A] font-mono font-bold text-[10px] sm:text-xs">
+                {formatTime(currentTime)}
+              </span>
+              
+              <div className="relative flex-1 flex items-center group/scrub">
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 100}
+                  step="0.1"
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#FFD60A] hover:h-1.5 transition-all"
+                />
+                <div 
+                  className="absolute left-0 top-0 bottom-0 bg-[#FFD60A] rounded-lg pointer-events-none shadow-[0_0_8px_#FFD60A]"
+                  style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                />
+              </div>
+
+              <span className="text-gray-400 font-mono font-bold text-[10px] sm:text-xs">
+                {formatTime(duration)}
+              </span>
             </div>
-            <span className="text-gray-400 font-mono font-bold text-xs">
-              {formatTime(duration)}
-            </span>
-          </div>
-        ) : null}
 
-        {/* Control Buttons & Indicators */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-          {/* Left: Stream Source Badge & Interactive Yellow Playback Buttons */}
-          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-            {isYouTube ? (
-              <span className="inline-flex items-center gap-1.5 bg-[#FFD60A]/15 text-[#FFD60A] border border-[#FFD60A]/40 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider shadow-[0_0_8px_rgba(255,214,10,0.2)]">
-                <Youtube className="w-3.5 h-3.5 text-[#FFD60A]" /> YouTube Cinema Stream
-              </span>
-            ) : isDrive && !isSampleDrive ? (
-              <span className="inline-flex items-center gap-1.5 bg-[#FFD60A]/15 text-[#FFD60A] border border-[#FFD60A]/40 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider">
-                <Tv className="w-3.5 h-3.5 text-[#FFD60A]" /> Google Drive Stream
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 bg-[#FFD60A]/20 text-[#FFD60A] border border-[#FFD60A]/60 px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider shadow-[0_0_10px_rgba(255,214,10,0.3)]">
-                <Sparkles className="w-3.5 h-3.5 text-[#FFD60A]" /> App Controlled Stream
-              </span>
-            )}
-
-            {/* Application Interactive Controls (Play/Pause, Skip 10s, Volume Slider) */}
-            {(!isDrive || isSampleDrive) && (
-              <div className="flex items-center gap-1 bg-[#1F2833] border border-[#FFD60A]/30 p-1 rounded-lg">
+            {/* In-Video Controls Toolbar (Small Sleek Icons) */}
+            <div className="flex items-center justify-between text-white">
+              {/* Left Side Controls: Play, Skip 10s, Mute/Volume */}
+              <div className="flex items-center gap-2">
                 <button
                   onClick={togglePlay}
-                  className="p-1 hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] rounded transition-colors"
+                  className="p-1.5 hover:bg-white/20 text-[#FFD60A] rounded-full transition-colors active:scale-95"
                   title={isPlaying ? 'Pause' : 'Play'}
                 >
-                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
                 </button>
+
                 <button
                   onClick={() => handleSkip(-10)}
-                  className="p-1 hover:bg-[#FFD60A] hover:text-[#0B0C10] text-gray-300 rounded transition-colors"
+                  className="p-1.5 hover:bg-white/20 text-gray-300 rounded-full transition-colors active:scale-95"
                   title="Rewind 10s"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
+
                 <button
                   onClick={() => handleSkip(10)}
-                  className="p-1 hover:bg-[#FFD60A] hover:text-[#0B0C10] text-gray-300 rounded transition-colors"
+                  className="p-1.5 hover:bg-white/20 text-gray-300 rounded-full transition-colors active:scale-95"
                   title="Forward 10s"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
 
-                {/* Volume Controls */}
-                <div className="flex items-center gap-1 pl-1 border-l border-gray-700">
+                {/* Volume Button & Mini Slider */}
+                <div className="flex items-center gap-1.5 pl-1 border-l border-white/10">
                   <button
                     onClick={toggleMute}
-                    className="p-1 hover:bg-[#FFD60A] hover:text-[#0B0C10] text-gray-300 rounded transition-colors"
+                    className="p-1.5 hover:bg-white/20 text-gray-300 rounded-full transition-colors active:scale-95"
                     title={isMuted ? 'Unmute' : 'Mute'}
                   >
-                    {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5 text-[#FFD60A]" />}
+                    {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-[#FFD60A]" />}
                   </button>
                   <input
                     type="range"
@@ -668,165 +619,150 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
                     step="0.05"
                     value={isMuted ? 0 : volume}
                     onChange={handleVolumeChange}
-                    className="w-14 h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-[#FFD60A]"
+                    className="w-12 sm:w-16 h-1 bg-white/20 rounded appearance-none cursor-pointer accent-[#FFD60A]"
                   />
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Right: Yellow Quality, Speed, Theater & Fullscreen */}
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
-            {/* Speed Selector (for YouTube and Direct Videos) */}
-            {(!isDrive || isSampleDrive) && (
-              <div className="flex items-center gap-0.5 bg-[#1F2833] p-0.5 rounded-md border border-[#FFD60A]/30 text-[10px] font-bold">
-                {[0.75, 1, 1.25, 1.5, 2].map((spd) => (
-                  <button
-                    key={spd}
-                    onClick={() => handleSpeedChange(spd)}
-                    className={`px-1.5 py-0.5 rounded transition-all ${
-                      playbackRate === spd
-                        ? 'bg-[#FFD60A] text-[#0B0C10] font-black'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {spd}x
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Premium Quality Selector (Popup Select) */}
-            <div ref={qualityRef} className="relative">
-              <button
-                onClick={() => {
-                  setShowQualityDropdown(!showQualityDropdown);
-                  setShowSubtitleDropdown(false);
-                }}
-                className={`bg-[#1F2833] hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] border border-[#FFD60A]/30 px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all select-none ${
-                  showQualityDropdown ? 'bg-[#FFD60A] text-[#0B0C10]' : ''
-                }`}
-                title="Video Quality"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>{quality}</span>
-              </button>
-
-              {showQualityDropdown && (
-                <div className="absolute right-0 bottom-full mb-2 w-28 bg-[#1F2833] border border-[#FFD60A]/30 rounded-xl shadow-2xl p-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                  <div className="text-[9px] uppercase tracking-widest text-gray-400 font-black px-2.5 py-1 select-none">
-                    Quality
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    {(['720p', '1080p', '4K'] as const).map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => {
-                          setQuality(q);
-                          setShowQualityDropdown(false);
-                        }}
-                        className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-bold transition-all ${
-                          quality === q
-                            ? 'bg-[#FFD60A] text-[#0B0C10]'
-                            : 'text-gray-300 hover:bg-black/30 hover:text-white'
-                        }`}
-                      >
-                        <span>{q}</span>
-                        {quality === q && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                    ))}
-                  </div>
+              {/* Right Side Controls: Speed, Quality, Subtitles, Fullscreen */}
+              <div className="flex items-center gap-2">
+                {/* Speed buttons */}
+                <div className="hidden sm:flex items-center gap-0.5 bg-black/40 p-0.5 rounded-lg border border-white/10 text-[10px] font-bold">
+                  {[0.75, 1, 1.25, 1.5, 2].map((spd) => (
+                    <button
+                      key={spd}
+                      onClick={() => handleSpeedChange(spd)}
+                      className={`px-1.5 py-0.5 rounded transition-all ${
+                        playbackRate === spd
+                          ? 'bg-[#FFD60A] text-[#0B0C10] font-black'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {spd}x
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
 
-            {/* Subtitle Selector (Popup Select CC) */}
-            {(!isDrive || isSampleDrive) && (
-              <div ref={subtitleRef} className="relative">
-                <button
-                  onClick={() => {
-                    setShowSubtitleDropdown(!showSubtitleDropdown);
-                    setShowQualityDropdown(false);
-                  }}
-                  className={`bg-[#1F2833] hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] border border-[#FFD60A]/30 px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all select-none ${
-                    showSubtitleDropdown ? 'bg-[#FFD60A] text-[#0B0C10]' : ''
-                  }`}
-                  title="Subtitles / Captions"
-                >
-                  <Captions className={`w-3.5 h-3.5 ${activeSubtitle !== 'off' ? 'text-green-400' : ''}`} />
-                  <span>CC</span>
-                </button>
+                {/* Quality Selector */}
+                <div ref={qualityRef} className="relative">
+                  <button
+                    onClick={() => {
+                      setShowQualityDropdown(!showQualityDropdown);
+                      setShowSubtitleDropdown(false);
+                    }}
+                    className={`p-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 border transition-all ${
+                      showQualityDropdown
+                        ? 'bg-[#FFD60A] text-[#0B0C10] border-[#FFD60A]'
+                        : 'bg-black/40 text-gray-300 border-white/10 hover:border-white/30'
+                    }`}
+                    title="Video Quality"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-[#FFD60A]" />
+                    <span className="hidden xs:inline">{quality}</span>
+                  </button>
 
-                {showSubtitleDropdown && (
-                  <div className="absolute right-0 bottom-full mb-2 w-32 bg-[#1F2833] border border-[#FFD60A]/30 rounded-xl shadow-2xl p-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                    <div className="text-[9px] uppercase tracking-widest text-gray-400 font-black px-2.5 py-1 select-none">
-                      Subtitles
+                  {showQualityDropdown && (
+                    <div className="absolute right-0 bottom-full mb-2 w-28 bg-[#1F2833] border border-white/20 rounded-xl shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="text-[9px] uppercase tracking-widest text-gray-400 font-black px-2.5 py-1 select-none">
+                        Quality
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        {(['720p', '1080p', '4K'] as const).map((q) => (
+                          <button
+                            key={q}
+                            onClick={() => {
+                              setQuality(q);
+                              setShowQualityDropdown(false);
+                            }}
+                            className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-bold transition-all ${
+                              quality === q
+                                ? 'bg-[#FFD60A] text-[#0B0C10]'
+                                : 'text-gray-300 hover:bg-black/40 hover:text-white'
+                            }`}
+                          >
+                            <span>{q}</span>
+                            {quality === q && <Check className="w-3.5 h-3.5" />}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-0.5">
-                      {[
-                        { val: 'off', lbl: 'Off' },
-                        { val: 'en', lbl: 'English' },
-                        { val: 'es', lbl: 'Spanish' }
-                      ].map((s) => (
-                        <button
-                          key={s.val}
-                          onClick={() => {
-                            setActiveSubtitle(s.val as any);
-                            setShowSubtitleDropdown(false);
-                          }}
-                          className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-bold transition-all ${
-                            activeSubtitle === s.val
-                              ? 'bg-[#FFD60A] text-[#0B0C10]'
-                              : 'text-gray-300 hover:bg-black/30 hover:text-white'
-                          }`}
-                        >
-                          <span>{s.lbl}</span>
-                          {activeSubtitle === s.val && <Check className="w-3.5 h-3.5" />}
-                        </button>
-                      ))}
+                  )}
+                </div>
+
+                {/* Subtitles CC Button */}
+                <div ref={subtitleRef} className="relative">
+                  <button
+                    onClick={() => {
+                      setShowSubtitleDropdown(!showSubtitleDropdown);
+                      setShowQualityDropdown(false);
+                    }}
+                    className={`p-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 border transition-all ${
+                      showSubtitleDropdown
+                        ? 'bg-[#FFD60A] text-[#0B0C10] border-[#FFD60A]'
+                        : 'bg-black/40 text-gray-300 border-white/10 hover:border-white/30'
+                    }`}
+                    title="Subtitles / Captions"
+                  >
+                    <Captions className={`w-3.5 h-3.5 ${activeSubtitle !== 'off' ? 'text-green-400' : 'text-[#FFD60A]'}`} />
+                    <span>CC</span>
+                  </button>
+
+                  {showSubtitleDropdown && (
+                    <div className="absolute right-0 bottom-full mb-2 w-32 bg-[#1F2833] border border-white/20 rounded-xl shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="text-[9px] uppercase tracking-widest text-gray-400 font-black px-2.5 py-1 select-none">
+                        Subtitles
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        {[
+                          { val: 'off', lbl: 'Off' },
+                          { val: 'en', lbl: 'English' },
+                          { val: 'es', lbl: 'Spanish' }
+                        ].map((s) => (
+                          <button
+                            key={s.val}
+                            onClick={() => {
+                              setActiveSubtitle(s.val as any);
+                              setShowSubtitleDropdown(false);
+                            }}
+                            className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-bold transition-all ${
+                              activeSubtitle === s.val
+                                ? 'bg-[#FFD60A] text-[#0B0C10]'
+                                : 'text-gray-300 hover:bg-black/40 hover:text-white'
+                            }`}
+                          >
+                            <span>{s.lbl}</span>
+                            {activeSubtitle === s.val && <Check className="w-3.5 h-3.5" />}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+
+                {/* Theater Mode Button */}
+                {onToggleTheater && (
+                  <button
+                    onClick={onToggleTheater}
+                    className="p-1.5 hover:bg-white/20 text-gray-300 rounded-lg transition-colors active:scale-95"
+                    title={isTheaterMode ? 'Standard View' : 'Theater Mode'}
+                  >
+                    <Maximize2 className="w-4 h-4 text-[#FFD60A]" />
+                  </button>
                 )}
+
+                {/* Fullscreen Button */}
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-1.5 hover:bg-white/20 text-[#FFD60A] rounded-lg transition-colors active:scale-95"
+                  title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                >
+                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                </button>
               </div>
-            )}
-
-            {/* Drive / Cinema HD Stream Mode Switcher */}
-            {isDrive && (
-              <button
-                onClick={() => setForceDirectPlayer(!forceDirectPlayer)}
-                className="bg-[#1F2833] hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] border border-[#FFD60A]/40 px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all"
-                title="Switch between Drive Embed and App-Controlled Cinema Stream"
-              >
-                <Tv className="w-3.5 h-3.5" />
-                <span>{forceDirectPlayer ? 'Drive Embed' : 'App Control'}</span>
-              </button>
-            )}
-
-            {/* Theater Mode Toggle */}
-            {onToggleTheater && (
-              <button
-                onClick={onToggleTheater}
-                className="bg-[#1F2833] hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] border border-[#FFD60A]/40 px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all"
-                title="Toggle Theater Mode"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Theater</span>
-              </button>
-            )}
-
-            {/* Fullscreen Button */}
-            <button
-              onClick={toggleFullscreen}
-              className="bg-[#1F2833] hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] border border-[#FFD60A]/40 p-1 rounded-md text-[11px] font-bold transition-all"
-              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-            >
-              {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
-            </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
-
-export default CinemaVideoPlayer;
