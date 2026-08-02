@@ -419,14 +419,20 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
       containerRef.current.requestFullscreen().then(() => {
-        if (typeof window !== 'undefined' && window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          window.screen.orientation.lock('landscape').catch(() => {});
+        if (typeof window !== 'undefined' && window.screen && window.screen.orientation) {
+          const orientation = window.screen.orientation as any;
+          if (typeof orientation.lock === 'function') {
+            orientation.lock('landscape').catch(() => {});
+          }
         }
       }).catch(() => {});
     } else {
       document.exitFullscreen().then(() => {
-        if (typeof window !== 'undefined' && window.screen && window.screen.orientation && typeof window.screen.orientation.unlock === 'function') {
-          try { window.screen.orientation.unlock(); } catch {}
+        if (typeof window !== 'undefined' && window.screen && window.screen.orientation) {
+          const orientation = window.screen.orientation as any;
+          if (typeof orientation.unlock === 'function') {
+            try { orientation.unlock(); } catch {}
+          }
         }
       }).catch(() => {});
     }
@@ -437,8 +443,11 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
       const isCurrentlyFullscreen = document.fullscreenElement === containerRef.current;
       setIsFullscreen(isCurrentlyFullscreen);
       if (!isCurrentlyFullscreen) {
-        if (typeof window !== 'undefined' && window.screen && window.screen.orientation && typeof window.screen.orientation.unlock === 'function') {
-          try { window.screen.orientation.unlock(); } catch {}
+        if (typeof window !== 'undefined' && window.screen && window.screen.orientation) {
+          const orientation = window.screen.orientation as any;
+          if (typeof orientation.unlock === 'function') {
+            try { orientation.unlock(); } catch {}
+          }
         }
       }
     };

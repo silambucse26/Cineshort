@@ -305,41 +305,6 @@ function HomeFeedContent() {
         </section>
       )}
 
-      {/* 2. MORE OTT APPS COMING SOON ROW */}
-      <div className="max-w-7xl mx-auto px-4 mb-8">
-        <h3 className="text-xs font-extrabold text-gray-300 tracking-wider mb-3 select-none">
-          More OTT Apps Coming Soon
-        </h3>
-        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
-          {/* Netflix */}
-          <div className="w-28 h-16 rounded-xl bg-gradient-to-br from-[#141414] to-[#000000] border border-[#E50914]/40 flex flex-col items-center justify-center shrink-0 shadow-[0_4px_15px_rgba(229,9,20,0.2)] hover:scale-105 transition-transform cursor-pointer">
-            <span className="text-[#E50914] font-black text-xl tracking-tighter drop-shadow-[0_0_8px_rgba(229,9,20,0.6)]">
-              NETFLIX
-            </span>
-          </div>
-
-          {/* Prime Video */}
-          <div className="w-28 h-16 rounded-xl bg-gradient-to-br from-[#00A8E1]/20 to-[#001E2B] border border-[#00A8E1]/40 flex flex-col items-center justify-center shrink-0 shadow-[0_4px_15px_rgba(0,168,225,0.2)] hover:scale-105 transition-transform cursor-pointer">
-            <span className="text-[#00A8E1] font-black text-xs tracking-wider">
-              prime video
-            </span>
-          </div>
-
-          {/* Disney+ */}
-          <div className="w-28 h-16 rounded-xl bg-gradient-to-br from-[#113CCF]/20 to-[#040B29] border border-[#113CCF]/40 flex flex-col items-center justify-center shrink-0 shadow-[0_4px_15px_rgba(17,60,207,0.2)] hover:scale-105 transition-transform cursor-pointer">
-            <span className="text-white font-black text-sm italic tracking-widest">
-              Disney<span className="text-[#0A84FF] font-normal text-xs">+</span>
-            </span>
-          </div>
-
-          {/* CineShort Pro */}
-          <div className="w-28 h-16 rounded-xl bg-gradient-to-br from-[#FFD60A]/20 to-[#1F2833] border border-[#FFD60A]/50 flex flex-col items-center justify-center shrink-0 shadow-[0_4px_15px_rgba(255,214,10,0.25)] hover:scale-105 transition-transform cursor-pointer">
-            <span className="text-[#FFD60A] font-black text-xs tracking-widest uppercase">
-              CineShort
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* 3. MAIN FEED AND CAROUSELS */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
