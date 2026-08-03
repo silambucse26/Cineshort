@@ -95,11 +95,11 @@ function HomeFeedContent() {
   const topDirector = rankedDirectors[0];
 
   return (
-    <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] pb-24 selection:bg-[#FFD60A] selection:text-[#0B0C10] relative">
+    <div className="min-h-screen bg-[#0B0C10] text-[#F5F5F5] pb-6 md:pb-12 selection:bg-[#FFD60A] selection:text-[#0B0C10] relative">
       
       {/* AMBIENT MOBILE FULL-BLEED BACKDROP */}
       {featuredFilm && (
-        <div className="md:hidden absolute top-0 inset-x-0 h-[85vh] overflow-hidden pointer-events-none z-0 select-none">
+        <div className="md:hidden absolute -top-14 inset-x-0 h-[85vh] overflow-hidden pointer-events-none z-0 select-none">
           <img
             src={featuredFilm.thumbnail_url}
             alt=""

@@ -17,7 +17,8 @@ import {
   Check,
   AlertTriangle,
   Captions,
-  RefreshCw
+  RefreshCw,
+  Sun
 } from 'lucide-react';
 import { Youtube } from '@/components/YoutubeIcon';
 import { extractYouTubeId } from '@/utils/youtubeUtils';
@@ -177,6 +178,113 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
       document.removeEventListener('mousedown', handleOutsideClick);
     };
   }, []);
+
+  // Touch Gestures State (Double-tap to skip 10s, vertical swipe for volume & brightness)
+  const [brightness, setBrightness] = useState<number>(1);
+  const [gestureOverlay, setGestureOverlay] = useState<{
+    type: 'volume' | 'brightness' | 'skip-fw' | 'skip-bw';
+    value?: number;
+    key: number;
+  } | null>(null);
+
+  const touchStartRef = useRef<{
+    x: number;
+    y: number;
+    time: number;
+    side: 'left' | 'right';
+    initialVolume: number;
+    initialBrightness: number;
+    isDragging: boolean;
+  } | null>(null);
+
+  const lastTapRef = useRef<{ side: 'left' | 'right'; time: number } | null>(null);
+  const gestureTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerGestureOverlay = (overlay: { type: 'volume' | 'brightness' | 'skip-fw' | 'skip-bw'; value?: number }) => {
+    if (gestureTimerRef.current) clearTimeout(gestureTimerRef.current);
+    setGestureOverlay({ ...overlay, key: Date.now() });
+    gestureTimerRef.current = setTimeout(() => {
+      setGestureOverlay(null);
+    }, 1200);
+  };
+
+  const handleTouchStartGesture = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!containerRef.current || e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const rect = containerRef.current.getBoundingClientRect();
+    const touchX = touch.clientX - rect.left;
+    const touchY = touch.clientY - rect.top;
+    const side = touchX < rect.width / 2 ? 'left' : 'right';
+
+    touchStartRef.current = {
+      x: touchX,
+      y: touchY,
+      time: Date.now(),
+      side,
+      initialVolume: volume,
+      initialBrightness: brightness,
+      isDragging: false,
+    };
+  };
+
+  const handleTouchMoveGesture = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!containerRef.current || !touchStartRef.current || e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const rect = containerRef.current.getBoundingClientRect();
+    const touchY = touch.clientY - rect.top;
+    const deltaY = touchStartRef.current.y - touchY; // positive = drag up
+
+    if (Math.abs(deltaY) > 12) {
+      touchStartRef.current.isDragging = true;
+    }
+
+    if (!touchStartRef.current.isDragging) return;
+
+    const sensitivity = 0.5 * rect.height;
+
+    if (touchStartRef.current.side === 'right') {
+      // Right side vertical swipe = Volume adjustment (0 to 1)
+      const newVol = Math.max(0, Math.min(1, touchStartRef.current.initialVolume + deltaY / sensitivity));
+      setVolume(newVol);
+      setIsMuted(newVol === 0);
+      if (videoRef.current) videoRef.current.volume = newVol;
+      triggerGestureOverlay({ type: 'volume', value: Math.round(newVol * 100) });
+    } else {
+      // Left side vertical swipe = Brightness adjustment (0.2 to 1.5)
+      const newBright = Math.max(0.2, Math.min(1.5, touchStartRef.current.initialBrightness + (deltaY / sensitivity) * 1.2));
+      setBrightness(newBright);
+      triggerGestureOverlay({ type: 'brightness', value: Math.round((newBright / 1.5) * 100) });
+    }
+  };
+
+  const handleTouchEndGesture = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchStartRef.current) return;
+
+    const { side, time, isDragging } = touchStartRef.current;
+    const tapDuration = Date.now() - time;
+
+    // Handle Double-Tap Gesture (< 250ms tap duration, no drag)
+    if (!isDragging && tapDuration < 250) {
+      const now = Date.now();
+      if (lastTapRef.current && lastTapRef.current.side === side && (now - lastTapRef.current.time) < 300) {
+        // Double tap confirmed!
+        if (side === 'right') {
+          handleSkip(10);
+          triggerGestureOverlay({ type: 'skip-fw' });
+        } else {
+          handleSkip(-10);
+          triggerGestureOverlay({ type: 'skip-bw' });
+        }
+        lastTapRef.current = null;
+      } else {
+        lastTapRef.current = { side, time: now };
+      }
+    }
+
+    touchStartRef.current = null;
+  };
 
   const getInitialSrc = () => {
     if (videoUrl && !videoUrl.includes('drive.google.com')) return videoUrl;
@@ -523,7 +631,13 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
       <div 
         ref={containerRef}
         onMouseMove={handleMouseMove}
-        onTouchStart={handleMouseMove}
+        onTouchStart={(e) => {
+          handleMouseMove();
+          handleTouchStartGesture(e);
+        }}
+        onTouchMove={handleTouchMoveGesture}
+        onTouchEnd={handleTouchEndGesture}
+        style={{ filter: `brightness(${brightness})` }}
         className={`relative w-full bg-black flex items-center justify-center overflow-hidden group select-none ${
           isFullscreen 
             ? 'h-screen w-screen fixed inset-0 z-[100]' 
@@ -532,6 +646,58 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
               : 'aspect-video max-h-[70vh]'
         }`}
       >
+        {/* Gesture Feedback HUD Overlays (Double Tap Skip & Volume/Brightness Swipes) */}
+        {gestureOverlay && (
+          <div key={gestureOverlay.key} className="absolute inset-0 pointer-events-none z-40 flex items-center justify-center">
+            {/* Double Tap Skip Forward HUD (+10s) */}
+            {gestureOverlay.type === 'skip-fw' && (
+              <div className="absolute right-8 sm:right-16 flex flex-col items-center justify-center bg-black/80 border border-[#FFD60A]/50 text-[#FFD60A] p-4 sm:p-6 rounded-full shadow-[0_0_40px_rgba(255,214,10,0.6)] animate-pulse backdrop-blur-md">
+                <RotateCw className="w-8 h-8 sm:w-10 sm:h-10 fill-current animate-spin-slow" />
+                <span className="text-xs sm:text-sm font-black tracking-widest mt-1">+10s</span>
+              </div>
+            )}
+
+            {/* Double Tap Rewind HUD (-10s) */}
+            {gestureOverlay.type === 'skip-bw' && (
+              <div className="absolute left-8 sm:left-16 flex flex-col items-center justify-center bg-black/80 border border-[#FFD60A]/50 text-[#FFD60A] p-4 sm:p-6 rounded-full shadow-[0_0_40px_rgba(255,214,10,0.6)] animate-pulse backdrop-blur-md">
+                <RotateCcw className="w-8 h-8 sm:w-10 sm:h-10 fill-current animate-spin-slow" />
+                <span className="text-xs sm:text-sm font-black tracking-widest mt-1">-10s</span>
+              </div>
+            )}
+
+            {/* Volume Swipe HUD */}
+            {gestureOverlay.type === 'volume' && (
+              <div className="bg-black/85 border border-white/20 text-white px-5 py-3.5 rounded-2xl flex items-center gap-3.5 backdrop-blur-md shadow-2xl">
+                {volume === 0 ? <VolumeX className="w-6 h-6 text-red-500" /> : <Volume2 className="w-6 h-6 text-[#FFD60A]" />}
+                <div className="space-y-1 w-28 sm:w-36">
+                  <div className="flex justify-between text-[11px] font-black uppercase tracking-wider">
+                    <span className="text-gray-300">Volume</span>
+                    <span className="text-[#FFD60A] font-mono">{gestureOverlay.value}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden border border-white/10">
+                    <div className="h-full bg-[#FFD60A] transition-all" style={{ width: `${gestureOverlay.value}%` }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Brightness Swipe HUD */}
+            {gestureOverlay.type === 'brightness' && (
+              <div className="bg-black/85 border border-white/20 text-white px-5 py-3.5 rounded-2xl flex items-center gap-3.5 backdrop-blur-md shadow-2xl">
+                <Sun className="w-6 h-6 text-yellow-400" />
+                <div className="space-y-1 w-28 sm:w-36">
+                  <div className="flex justify-between text-[11px] font-black uppercase tracking-wider">
+                    <span className="text-gray-300">Brightness</span>
+                    <span className="text-yellow-400 font-mono">{gestureOverlay.value}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden border border-white/10">
+                    <div className="h-full bg-yellow-400 transition-all" style={{ width: `${gestureOverlay.value}%` }} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {/* Stream Engine Renderer */}
         {isYouTube ? (
           <div className="w-full h-full relative pointer-events-none">

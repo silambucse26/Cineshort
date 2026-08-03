@@ -395,7 +395,7 @@ export const Header: React.FC = () => {
 
       {/* 2a. MOBILE TOP LOGO BAR (md:hidden) */}
       <header 
-        className="md:hidden fixed top-0 left-0 right-0 h-14 bg-gradient-to-b from-[#0B0C10]/95 to-[#0B0C10]/80 border-b border-white/5 flex items-center justify-between px-4 z-40 backdrop-blur-md shadow-md"
+        className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0B0C10]/95 flex items-center justify-between px-4 z-40 backdrop-blur-md shadow-md"
       >
         <Link href="/" className="flex items-center gap-2 group">
           <CineShortLogo className="w-8 h-8 group-hover:scale-105 transition-transform" />
