@@ -160,14 +160,11 @@ function HomeFeedContent() {
             <img
               src={featuredFilm.thumbnail_url}
               alt={featuredFilm.title}
-              className="w-full h-full object-cover scale-105"
+              className="w-full h-full object-cover object-center"
             />
 
-            {/* Top Gradient */}
-            <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent" />
-
             {/* Bottom Immersive Gradient Mask */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/65 to-transparent z-10 flex flex-col justify-end p-5 text-center">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent z-10 flex flex-col justify-end p-5 text-center">
               {/* Title & Underline effect */}
               <div className="space-y-1 mb-2">
                 <h1 className="text-2xl font-extrabold uppercase tracking-tight text-white drop-shadow-md">
