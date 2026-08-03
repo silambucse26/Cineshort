@@ -19,7 +19,9 @@ import {
   TrendingUp,
   Tv,
   Plus,
-  Settings
+  Settings,
+  Bookmark,
+  Check
 } from 'lucide-react';
 import { useShortFilm } from '../context/ShortFilmContext';
 import { FilmCard } from '../components/FilmCard';
@@ -29,7 +31,7 @@ function HomeFeedContent() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get('type') || 'all';
 
-  const { approvedFilms, directors } = useShortFilm();
+  const { approvedFilms, directors, toggleWishlist, isInWishlist, wishlistFilmIds } = useShortFilm();
 
   const [selectedMood, setSelectedMood] = useState<MoodTag | 'all'>('all');
   const [selectedDuration, setSelectedDuration] = useState<DurationFilter>('all');
@@ -200,13 +202,27 @@ function HomeFeedContent() {
                   <span>Play</span>
                 </Link>
 
-                <Link
-                  href={`/film/${featuredFilm.id}`}
-                  className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-extrabold text-xs py-2.5 px-4 rounded-md flex items-center justify-center gap-1.5 border border-white/20 transition-transform active:scale-95 shadow-lg"
+                <button
+                  type="button"
+                  onClick={() => toggleWishlist(featuredFilm.id)}
+                  className={`flex-1 font-extrabold text-xs py-2.5 px-4 rounded-md flex items-center justify-center gap-1.5 border transition-all active:scale-95 shadow-lg backdrop-blur-md ${
+                    isInWishlist(featuredFilm.id)
+                      ? 'bg-red-600/90 border-red-400 text-white shadow-[0_0_12px_rgba(239,68,68,0.5)]'
+                      : 'bg-white/20 hover:bg-white/30 border-white/20 text-white'
+                  }`}
                 >
-                  <Plus className="w-4 h-4 text-white" />
-                  <span>My List</span>
-                </Link>
+                  {isInWishlist(featuredFilm.id) ? (
+                    <>
+                      <Check className="w-4 h-4 text-white" />
+                      <span>Wishlisted</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 text-white" />
+                      <span>My List</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -388,6 +404,31 @@ function HomeFeedContent() {
         {/* SHOWCASE ROWS OR FILTER RESULTS */}
         {selectedMood === 'all' && selectedDuration === 'all' && activeTab === 'all' ? (
           <div className="space-y-10">
+            {/* Row 0: My Saved Wishlist */}
+            {wishlistFilmIds.length > 0 && (
+              <div className="space-y-4 bg-[#1F2833]/30 p-4 rounded-2xl border border-red-500/30">
+                <div className="flex items-center justify-between border-l-[3px] border-red-500 pl-3">
+                  <h2 className="font-black text-sm sm:text-base text-white tracking-wider uppercase flex items-center gap-2">
+                    <Bookmark className="w-4 h-4 text-red-500 fill-current" />
+                    <span>My Saved Wishlist ({wishlistFilmIds.length})</span>
+                  </h2>
+                  <Link href="/profile" className="text-[10px] text-[#FFD60A] font-bold uppercase tracking-widest hover:underline">
+                    View All Wishlist →
+                  </Link>
+                </div>
+
+                <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-3 scroll-smooth">
+                  {approvedFilms
+                    .filter((f) => wishlistFilmIds.includes(f.id))
+                    .map((film) => (
+                      <div key={film.id} className="w-[240px] sm:w-[280px] shrink-0 hover:scale-[1.03] transition-transform duration-300">
+                        <FilmCard film={film} />
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
             {/* Row 1: Trending Blockbusters */}
             {trendingFilms.length > 0 && (
               <div className="space-y-4">

@@ -22,6 +22,7 @@ import {
 import { Youtube } from '@/components/YoutubeIcon';
 import { extractYouTubeId } from '@/utils/youtubeUtils';
 import { getDriveEmbedUrl, isSampleOrInvalidDriveUrl, getDriveDirectStreamUrl } from '@/utils/googleDriveUtils';
+import { getUploadedVideoObjectUrl } from '@/utils/indexedDbVideo';
 
 // Premium Timed Subtitle dialogue mapping helper (Dynamic based on film metadata)
 const getSubtitleText = (time: number, lang: 'en' | 'es', title?: string, overview?: string): string => {
@@ -61,6 +62,7 @@ declare global {
 }
 
 interface CinemaVideoPlayerProps {
+  filmId?: string;
   videoUrl?: string;
   youtubeId?: string | null;
   youtubeUrl?: string;
@@ -113,6 +115,7 @@ const loadYouTubeIframeAPI = (): Promise<any> => {
 };
 
 export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
+  filmId,
   videoUrl,
   youtubeId,
   youtubeUrl,
@@ -176,7 +179,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   }, []);
 
   const getInitialSrc = () => {
-    if (isPlayableMediaUrl(videoUrl)) return videoUrl!;
+    if (videoUrl && !videoUrl.includes('drive.google.com')) return videoUrl;
     if (driveLink && !isSampleOrInvalidDriveUrl(driveLink)) {
       return getDriveDirectStreamUrl(driveLink);
     }
@@ -261,16 +264,42 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   }, [isYouTube, extractedYtId, durationSec]);
 
   useEffect(() => {
-    if (!isYouTube) {
-      if (isPlayableMediaUrl(videoUrl)) {
-        setActiveVideoSrc(videoUrl!);
-      } else if (driveLink && !isSampleOrInvalidDriveUrl(driveLink)) {
-        setActiveVideoSrc(getDriveDirectStreamUrl(driveLink));
-      } else {
-        setActiveVideoSrc(SAMPLE_FALLBACK_VIDEO);
+    let isMounted = true;
+
+    const resolveSrc = async () => {
+      if (isYouTube) return;
+
+      // 1. Try to load local uploaded video file from IndexedDB
+      if (filmId) {
+        try {
+          const storedBlobUrl = await getUploadedVideoObjectUrl(filmId);
+          if (storedBlobUrl && isMounted) {
+            setActiveVideoSrc(storedBlobUrl);
+            setUseDriveIframe(false);
+            setVideoError(false);
+            return;
+          }
+        } catch (e) {
+          console.warn('IndexedDB video resolution failed:', e);
+        }
       }
-    }
-  }, [videoUrl, driveLink, isYouTube]);
+
+      // 2. Check provided videoUrl or Drive link
+      if (isPlayableMediaUrl(videoUrl)) {
+        if (isMounted) setActiveVideoSrc(videoUrl!);
+      } else if (driveLink && !isSampleOrInvalidDriveUrl(driveLink)) {
+        if (isMounted) setActiveVideoSrc(getDriveDirectStreamUrl(driveLink));
+      } else {
+        if (isMounted) setActiveVideoSrc(SAMPLE_FALLBACK_VIDEO);
+      }
+    };
+
+    resolveSrc();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filmId || '', videoUrl || '', driveLink || '', isYouTube]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -333,9 +362,9 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
         videoRef.current.pause();
         setIsPlaying(false);
       } else {
-        if (!activeVideoSrc || (!isPlayableMediaUrl(activeVideoSrc) && !activeVideoSrc.includes('drive.google.com')) || videoRef.current.error) {
+        if (!activeVideoSrc || !isPlayableMediaUrl(activeVideoSrc) || videoRef.current.error) {
           setActiveVideoSrc(SAMPLE_FALLBACK_VIDEO);
-          videoRef.current.load();
+          if (videoRef.current) videoRef.current.load();
         }
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
@@ -345,7 +374,12 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
               setVideoError(false);
             })
             .catch(() => {
+              // Try unmuting or falling back to sample stream
               if (videoRef.current) {
+                if (activeVideoSrc !== SAMPLE_FALLBACK_VIDEO) {
+                  setActiveVideoSrc(SAMPLE_FALLBACK_VIDEO);
+                  videoRef.current.load();
+                }
                 videoRef.current.muted = true;
                 setIsMuted(true);
                 videoRef.current.play().then(() => {
@@ -555,8 +589,8 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
           </div>
         )}
 
-        {/* Center Play/Pause Overlay Button (Always Active to initiate play) */}
-        {(!isPlaying || showControls) && (
+        {/* Center Play/Pause Overlay Button (Active for HTML5 & YouTube players) */}
+        {(!isPlaying || showControls) && !useDriveIframe && (
           <button
             onClick={togglePlay}
             className="absolute inset-0 m-auto w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] flex items-center justify-center shadow-[0_0_30px_rgba(255,214,10,0.8)] transition-transform transform active:scale-95 z-20 opacity-90 hover:opacity-100"
@@ -580,11 +614,12 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
         )}
 
         {/* SLEEK IN-VIDEO FLOATING OVERLAY CONTROLS (Small Icons, Bottom Aligned) */}
-        <div 
-          className={`absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-8 pb-3 px-3.5 sm:px-5 flex flex-col gap-2 transition-opacity duration-300 ${
-            showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-        >
+        {!useDriveIframe && (
+          <div 
+            className={`absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-8 pb-3 px-3.5 sm:px-5 flex flex-col gap-2 transition-opacity duration-300 ${
+              showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
           {/* Progress Bar */}
           <div className="flex items-center gap-2.5 w-full">
             <span className="text-[#FFD60A] font-mono font-bold text-[10px] sm:text-xs">
@@ -798,7 +833,8 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
+  </div>
   );
 };

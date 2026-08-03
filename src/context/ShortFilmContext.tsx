@@ -55,6 +55,7 @@ interface ShortFilmContextType {
   comments: Comment[];
   userRatings: Record<string, number>;
   followedDirectorIds: string[];
+  wishlistFilmIds: string[];
   activePersona: UserPersona;
   setActivePersona: (persona: UserPersona) => void;
   personas: UserPersona[];
@@ -67,6 +68,8 @@ interface ShortFilmContextType {
   addComment: (filmId: string, text: string) => void;
   addFilm: (newFilm: Omit<ShortFilm, 'id' | 'rating_avg' | 'rating_count' | 'upload_date' | 'views_count' | 'likes_count'>) => ShortFilm;
   toggleFollowDirector: (directorId: string) => void;
+  toggleWishlist: (filmId: string) => void;
+  isInWishlist: (filmId: string) => boolean;
   
   // Custom Auth Actions
   loginWithCredentials: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
@@ -107,6 +110,7 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [comments, setComments] = useState<Comment[]>([]);
   const [userRatings, setUserRatings] = useState<Record<string, number>>({});
   const [followedDirectorIds, setFollowedDirectorIds] = useState<string[]>([]);
+  const [wishlistFilmIds, setWishlistFilmIds] = useState<string[]>([]);
   const [activePersona, setActivePersona] = useState<UserPersona>(DEFAULT_PERSONAS[0]);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -121,9 +125,12 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (Array.isArray(parsed)) {
             const sanitized = parsed.map((f: ShortFilm) => ({
               ...f,
-              video_fallback_url: (f.video_fallback_url && (f.video_fallback_url.startsWith('blob:') || f.video_fallback_url.includes('drive.google.com')))
+              video_fallback_url: (f.video_fallback_url && f.video_fallback_url.startsWith('blob:'))
                 ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
-                : f.video_fallback_url
+                : (f.video_fallback_url || f.drive_link),
+              thumbnail_url: (f.thumbnail_url && !f.thumbnail_url.startsWith('blob:'))
+                ? f.thumbnail_url
+                : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80',
             }));
             setFilms(sanitized);
           }
@@ -140,6 +147,10 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const savedComments = localStorage.getItem('streamix_comments_v2');
       if (savedComments) {
         try { setComments(JSON.parse(savedComments)); } catch {}
+      }
+      const savedWishlist = localStorage.getItem('streamix_wishlist_ids');
+      if (savedWishlist) {
+        try { setWishlistFilmIds(JSON.parse(savedWishlist)); } catch {}
       }
 
       // Load user session
@@ -206,8 +217,8 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               director_name: dir?.name || 'Independent Director',
               director_pic: dir?.profile_pic_url || '',
               hero_names: filmHeroes.length > 0 ? filmHeroes : ['Independent Cast'],
-              video_fallback_url: f.video_fallback_url || f.drive_link,
-              thumbnail_url: f.thumbnail_url || 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80',
+              video_fallback_url: (f.video_fallback_url && !f.video_fallback_url.startsWith('blob:') && !f.video_fallback_url.includes('drive.google.com')) ? f.video_fallback_url : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+              thumbnail_url: (f.thumbnail_url && !f.thumbnail_url.startsWith('blob:')) ? f.thumbnail_url : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80',
               status: f.status || 'approved',
             };
           });
@@ -282,6 +293,12 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       localStorage.setItem('streamix_comments_v2', JSON.stringify(comments));
     }
   }, [comments, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded && typeof window !== 'undefined') {
+      localStorage.setItem('streamix_wishlist_ids', JSON.stringify(wishlistFilmIds));
+    }
+  }, [wishlistFilmIds, isLoaded]);
 
   // Derived film lists
   const approvedFilms = films.filter((f) => f.status === 'approved');
@@ -405,21 +422,51 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const toggleWishlist = (filmId: string) => {
+    setWishlistFilmIds((prev) => {
+      const exists = prev.includes(filmId);
+      return exists ? prev.filter((id) => id !== filmId) : [...prev, filmId];
+    });
+
+    if (isSupabaseConfigured && supabase && activePersona?.id) {
+      (async () => {
+        try {
+          if (wishlistFilmIds.includes(filmId)) {
+            await supabase.from('user_wishlists').delete().eq('user_id', activePersona.id).eq('film_id', filmId);
+          } else {
+            await supabase.from('user_wishlists').insert({ user_id: activePersona.id, film_id: filmId });
+          }
+        } catch (e) {
+          console.error('Wishlist sync error:', e);
+        }
+      })();
+    }
+  };
+
+  const isInWishlist = (filmId: string): boolean => {
+    return wishlistFilmIds.includes(filmId);
+  };
+
   const addFilm = (
     filmData: Omit<ShortFilm, 'id' | 'rating_avg' | 'rating_count' | 'upload_date' | 'views_count' | 'likes_count'>
   ): ShortFilm => {
     const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
     const newId = isSupabaseConfigured ? crypto.randomUUID() : `film-${Date.now()}`;
     const rawFallback = filmData.video_fallback_url;
-    const isInvalidFallback = !rawFallback || rawFallback.includes('drive.google.com');
+    const isInvalidFallback = !rawFallback || rawFallback.startsWith('blob:') || rawFallback.includes('drive.google.com');
     const safeFallback = isInvalidFallback 
       ? (filmData.drive_link && filmData.drive_link.includes('drive.google.com') ? filmData.drive_link : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4')
       : rawFallback;
+
+    const safeThumbnail = (filmData.thumbnail_url && !filmData.thumbnail_url.startsWith('blob:'))
+      ? filmData.thumbnail_url
+      : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80';
 
     const publishedFilm: ShortFilm = {
       ...filmData,
       id: newId,
       video_fallback_url: safeFallback,
+      thumbnail_url: safeThumbnail,
       rating_avg: 5.0,
       rating_count: 1,
       status: filmData.status || 'approved',
@@ -526,7 +573,46 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const deleteFilm = (filmId: string) => {
+    const targetFilm = films.find((f) => f.id === filmId);
     setFilms((prev) => prev.filter((f) => f.id !== filmId));
+
+    if (targetFilm) {
+      setDirectors((prevDirs) =>
+        prevDirs.map((d) =>
+          d.id === targetFilm.director_id
+            ? { ...d, film_count: Math.max(0, d.film_count - 1) }
+            : d
+        )
+      );
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      (async () => {
+        try {
+          await supabase
+            .from('films')
+            .delete()
+            .eq('id', filmId);
+
+          if (targetFilm?.director_id) {
+            const { data: dirData } = await supabase
+              .from('directors')
+              .select('film_count')
+              .eq('id', targetFilm.director_id)
+              .maybeSingle();
+
+            if (dirData && dirData.film_count > 0) {
+              await supabase
+                .from('directors')
+                .update({ film_count: Math.max(0, dirData.film_count - 1) })
+                .eq('id', targetFilm.director_id);
+            }
+          }
+        } catch (e) {
+          console.error('Error deleting film from Supabase:', e);
+        }
+      })();
+    }
   };
 
   const updateDirector = (directorId: string, data: Partial<Director>) => {
@@ -883,7 +969,7 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
 
     // 3. Sync to Supabase in background
-    if (isSupabaseConfigured && supabase && activePersona.email) {
+    if (isSupabaseConfigured && supabase && activePersona?.email) {
       (async () => {
         try {
           if (isFollowing) {
@@ -941,6 +1027,7 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         comments,
         userRatings,
         followedDirectorIds,
+        wishlistFilmIds,
         activePersona,
         setActivePersona,
         personas: DEFAULT_PERSONAS,
@@ -955,6 +1042,8 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addComment,
         addFilm,
         toggleFollowDirector,
+        toggleWishlist,
+        isInWishlist,
         approveFilm,
         rejectFilm,
         updateFilm,

@@ -22,7 +22,9 @@ import {
   Eye,
   Clapperboard,
   Tv,
-  Settings
+  Settings,
+  Bookmark,
+  Users
 } from 'lucide-react';
 import { useShortFilm } from '../context/ShortFilmContext';
 
@@ -35,7 +37,7 @@ export const CineShortLogo: React.FC<{ className?: string }> = ({ className = "w
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { activePersona, logoutUser, films } = useShortFilm();
+  const { activePersona, logoutUser, films, wishlistFilmIds } = useShortFilm();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,6 +125,43 @@ export const Header: React.FC = () => {
             <Clapperboard className="w-5 h-5 shrink-0 text-[#FFD60A]" />
             <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 font-semibold text-xs select-none truncate">
               Directors Vault
+            </span>
+          </Link>
+
+          {/* Watch Together Collaborative Room */}
+          <Link
+            href="/watch-party"
+            className={`w-full flex items-center gap-4 py-3.5 px-4 rounded-xl transition-all ${
+              pathname.startsWith('/watch-party')
+                ? 'bg-[#1F2833] text-[#FFD60A] font-bold shadow-md'
+                : 'text-gray-400 hover:text-white hover:bg-[#1F2833]/40'
+            }`}
+          >
+            <Users className="w-5 h-5 shrink-0 text-[#FFD60A]" />
+            <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 font-semibold text-xs select-none truncate">
+              Watch Together
+            </span>
+          </Link>
+
+          {/* Wishlist Link */}
+          <Link
+            href="/profile"
+            className={`w-full flex items-center gap-4 py-3.5 px-4 rounded-xl transition-all relative ${
+              pathname === '/profile'
+                ? 'bg-[#1F2833] text-[#FFD60A] font-bold shadow-md'
+                : 'text-gray-400 hover:text-white hover:bg-[#1F2833]/40'
+            }`}
+          >
+            <div className="relative shrink-0">
+              <Bookmark className="w-5 h-5 text-red-500 fill-current" />
+              {wishlistFilmIds.length > 0 && (
+                <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-black shadow">
+                  {wishlistFilmIds.length}
+                </span>
+              )}
+            </div>
+            <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 font-semibold text-xs select-none truncate">
+              My Wishlist
             </span>
           </Link>
 
@@ -335,15 +374,22 @@ export const Header: React.FC = () => {
           <span className="text-[9px] font-bold tracking-wider">Search</span>
         </button>
 
-        {/* 5. Mobile Setting / Profile Link */}
+        {/* 5. Mobile Wishlist / Profile Link */}
         <Link
           href="/profile"
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg transition-colors relative ${
             pathname === '/profile' ? 'text-[#FFD60A] font-bold' : 'text-gray-400 hover:text-white'
           }`}
         >
-          <Settings className="w-5 h-5" />
-          <span className="text-[9px] font-bold tracking-wider">Setting</span>
+          <div className="relative">
+            <Bookmark className={`w-5 h-5 ${wishlistFilmIds.length > 0 ? 'text-red-500 fill-current' : ''}`} />
+            {wishlistFilmIds.length > 0 && (
+              <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black shadow">
+                {wishlistFilmIds.length}
+              </span>
+            )}
+          </div>
+          <span className="text-[9px] font-bold tracking-wider">Wishlist</span>
         </Link>
       </nav>
 

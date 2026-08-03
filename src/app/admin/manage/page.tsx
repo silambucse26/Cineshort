@@ -104,6 +104,12 @@ export default function AdminManageContentPage() {
     setEditingFilm(null);
   };
 
+  const handleDeleteFilm = (filmId: string, filmTitle: string) => {
+    if (window.confirm(`Are you sure you want to delete "${filmTitle}" permanently from the database?`)) {
+      deleteFilm(filmId);
+    }
+  };
+
   // Director Actions
   const handleOpenAddDirector = () => {
     setDirectorName('');
@@ -300,9 +306,9 @@ export default function AdminManageContentPage() {
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => deleteFilm(film.id)}
+                        onClick={() => handleDeleteFilm(film.id, film.title)}
                         className="p-2 text-gray-400 hover:text-[#E63946] hover:bg-[#0B0C10] rounded-lg transition-colors"
-                        title="Delete Film"
+                        title="Delete Film from Database"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

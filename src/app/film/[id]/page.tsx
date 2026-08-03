@@ -2,7 +2,7 @@
 
 import React, { useState, use, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { 
   Play, 
   Star, 
@@ -20,7 +20,10 @@ import {
   Maximize2,
   Sliders,
   Lock,
-  LogIn
+  LogIn,
+  Trash2,
+  Bookmark,
+  Users
 } from 'lucide-react';
 import { CinemaVideoPlayer } from '@/components/CinemaVideoPlayer';
 import { useShortFilm } from '../../../context/ShortFilmContext';
@@ -30,6 +33,7 @@ import { isSampleOrInvalidDriveUrl, getDriveEmbedUrl } from '../../../utils/goog
 import { getYouTubeEmbedUrl, extractYouTubeId } from '../../../utils/youtubeUtils';
 
 export default function FilmPlayerPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter();
   const resolvedParams = use(params);
   const filmId = resolvedParams.id;
 
@@ -39,9 +43,12 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
     films,
     rateFilm,
     addComment,
+    deleteFilm,
     userRatings,
     activePersona,
     incrementViews,
+    toggleWishlist,
+    isInWishlist,
   } = useShortFilm();
 
   const film = getFilmById(filmId);
@@ -112,6 +119,13 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
     }
   };
 
+  const handleAdminDelete = () => {
+    if (window.confirm(`Admin: Are you sure you want to permanently delete "${film.title}" from the database?`)) {
+      deleteFilm(film.id);
+      router.push('/');
+    }
+  };
+
   return (
     <div className={`min-h-screen bg-[#0B0C10] text-[#F5F5F5] py-6 px-4 sm:px-6 lg:px-8 transition-all ${isTheaterMode ? 'max-w-full' : ''}`}>
       <div className={`${isTheaterMode ? 'w-full' : 'max-w-6xl'} mx-auto space-y-6 transition-all`}>
@@ -121,6 +135,16 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
             ← Back to Feed
           </Link>
           <div className="flex items-center gap-2">
+            {activePersona?.role === 'admin' && (
+              <button
+                onClick={handleAdminDelete}
+                className="bg-[#E63946]/20 hover:bg-[#E63946] border border-[#E63946]/50 text-red-400 hover:text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="Delete Film from Database"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Admin Delete</span>
+              </button>
+            )}
             <span className="tag-red font-bold text-[10px] uppercase">{film.mood_tag}</span>
           </div>
         </div>
@@ -128,6 +152,7 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
         {/* Cinema Video Player Container with Custom Yellow Application Controls */}
         {activePersona?.email ? (
           <CinemaVideoPlayer
+            filmId={film.id}
             videoUrl={film.video_fallback_url || film.drive_link}
             youtubeId={ytId}
             youtubeUrl={film.youtube_url}
@@ -198,9 +223,9 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
 
-            {/* Share & Views Stats */}
-            <div className="flex items-center gap-3">
-              <div className="text-right text-xs text-gray-400 hidden sm:block">
+            {/* Share, Wishlist & Watch Party Actions */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="text-right text-xs text-gray-400 hidden lg:block mr-2">
                 <div className="flex items-center gap-1 text-[#F5F5F5] font-bold text-sm">
                   <Eye className="w-4 h-4 text-[#FFD60A]" />
                   <span>{(film.views_count ?? 0).toLocaleString()} {(film.views_count ?? 0) === 1 ? 'view' : 'views'}</span>
@@ -209,11 +234,33 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
               </div>
 
               <button
+                onClick={() => toggleWishlist(film.id)}
+                className={`border px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95 ${
+                  isInWishlist(film.id)
+                    ? 'bg-red-600/90 text-white border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]'
+                    : 'bg-[#0B0C10] hover:bg-black border-gray-700 text-[#F5F5F5]'
+                }`}
+                title={isInWishlist(film.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              >
+                <Bookmark className={`w-4 h-4 ${isInWishlist(film.id) ? 'fill-current' : 'text-[#FFD60A]'}`} />
+                <span>{isInWishlist(film.id) ? 'Wishlisted' : 'Wishlist'}</span>
+              </button>
+
+              <Link
+                href={`/watch-party?filmId=${film.id}`}
+                className="bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] px-3.5 py-2 rounded-lg text-xs font-black flex items-center gap-1.5 transition-transform active:scale-95 shadow-[0_0_15px_rgba(255,214,10,0.3)]"
+                title="Create a Collaborative Watch Room"
+              >
+                <Users className="w-4 h-4 text-[#0B0C10]" />
+                <span>Watch Together</span>
+              </Link>
+
+              <button
                 onClick={handleCopyShare}
-                className="bg-[#0B0C10] hover:bg-[#0B0C10]/80 border border-gray-700 text-[#F5F5F5] px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors"
+                className="bg-[#0B0C10] hover:bg-[#0B0C10]/80 border border-gray-700 text-[#F5F5F5] px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
               >
                 <Share2 className="w-4 h-4 text-[#FFD60A]" />
-                <span>{isCopied ? 'Link Copied!' : 'Share'}</span>
+                <span>{isCopied ? 'Copied!' : 'Share'}</span>
               </button>
             </div>
           </div>

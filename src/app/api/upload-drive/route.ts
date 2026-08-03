@@ -17,11 +17,21 @@ export async function POST(request: Request) {
     let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
     const parentFolderId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
 
-    // Check if Google Drive credentials are configured
-    if (serviceEmail && privateKey) {
+    // Check if Google Drive credentials are configured with a valid PEM private key
+    const isValidPrivateKey = Boolean(
+      privateKey &&
+      privateKey.includes('-----BEGIN PRIVATE KEY-----') &&
+      !privateKey.includes('your_private_key_here')
+    );
+
+    if (serviceEmail && isValidPrivateKey) {
       try {
-        // Unescape private key newlines if formatted with \n escape strings
-        privateKey = privateKey.replace(/\\n/g, '\n');
+        // Unescape private key newlines, strip quotes and carriage returns
+        privateKey = privateKey!
+          .trim()
+          .replace(/^["']|["']$/g, '')
+          .replace(/\\n/g, '\n')
+          .replace(/\r/g, '');
 
         const auth = new google.auth.JWT({
           email: serviceEmail,

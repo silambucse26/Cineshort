@@ -2,31 +2,29 @@
  * Google Drive Video URL validation and helper functions
  */
 
+export function extractDriveFileId(url?: string): string | null {
+  if (!url || !url.includes('drive.google.com')) return null;
+  const match = url.match(/\/d\/([^\/\?#]+)/) || url.match(/[?&]id=([^&]+)/);
+  return match && match[1] ? match[1] : null;
+}
+
 export function isSampleOrInvalidDriveUrl(url?: string): boolean {
   if (!url) return true;
-  
   if (!url.includes('drive.google.com')) return false;
 
-  // Known placeholder/sample patterns or simulated test drive file IDs that cause 404
   const sampleIdentifiers = [
     'simulated',
-    'Sample',
-    'sample',
     'PendingDriveId',
-    '1qhj4FV7KJIq_NI2amVZIceo_kd2obsfa', // non-existent demo file
+    '1qhj4FV7KJIq_NI2amVZIceo_kd2obsfa', // known dead placeholder ID
   ];
 
   if (sampleIdentifiers.some((identifier) => url.includes(identifier))) {
     return true;
   }
 
-  // Extract ID from drive link and verify format
-  const match = url.match(/\/d\/([^\/]+)/);
-  if (match && match[1]) {
-    const id = match[1];
-    if (id.startsWith('simulated') || id.startsWith('sample') || id.length < 20) {
-      return true;
-    }
+  const id = extractDriveFileId(url);
+  if (id && (id.startsWith('simulated') || id.length < 15)) {
+    return true;
   }
 
   return false;
@@ -35,7 +33,10 @@ export function isSampleOrInvalidDriveUrl(url?: string): boolean {
 export function getDriveEmbedUrl(url: string): string {
   if (!url) return '';
   if (url.includes('drive.google.com')) {
-    // Ensure URL uses /preview format for embedding
+    const id = extractDriveFileId(url);
+    if (id) {
+      return `https://drive.google.com/file/d/${id}/preview`;
+    }
     return url.replace(/\/view(\?.*)?$/, '/preview');
   }
   return url;
@@ -43,9 +44,10 @@ export function getDriveEmbedUrl(url: string): string {
 
 export function getDriveDirectStreamUrl(url: string): string {
   if (!url || !url.includes('drive.google.com')) return url;
-  const match = url.match(/\/d\/([^\/]+)/) || url.match(/id=([^&]+)/);
-  if (match && match[1]) {
-    return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+  const id = extractDriveFileId(url);
+  if (id) {
+    return `https://drive.google.com/uc?export=download&id=${id}`;
   }
   return url;
 }
+

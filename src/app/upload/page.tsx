@@ -23,6 +23,7 @@ import { useShortFilm } from '../../context/ShortFilmContext';
 import { MoodTag } from '../../types/shortfilm';
 import { uploadVideoToGoogleDrive, detectVideoDuration, formatDuration } from '../../services/driveService';
 import { extractYouTubeId, getYouTubeThumbnail, isYouTubeUrl } from '../../utils/youtubeUtils';
+import { saveUploadedVideo } from '../../utils/indexedDbVideo';
 
 export default function UploadFlowPage() {
   const router = useRouter();
@@ -57,6 +58,10 @@ export default function UploadFlowPage() {
     folderName: string;
     fileSizeFormatted: string;
   } | null>(null);
+
+  // Thumbnail State (Optional)
+  const [customThumbnailUrl, setCustomThumbnailUrl] = useState('');
+  const [customThumbnailFile, setCustomThumbnailFile] = useState('');
 
   // Form Metadata Details
   const [title, setTitle] = useState('');
@@ -205,9 +210,9 @@ export default function UploadFlowPage() {
 
       // 3. Finalize Video details
       const isYt = uploadMode === 'youtube' && youtubeId;
-      const thumb = isYt 
+      const thumb = customThumbnailFile || customThumbnailUrl.trim() || (isYt 
         ? getYouTubeThumbnail(youtubeId!) 
-        : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80';
+        : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80');
 
       const newFilm = addFilm({
         title: title.trim(),
@@ -225,11 +230,22 @@ export default function UploadFlowPage() {
         video_source: isYt ? 'youtube' : 'drive',
         video_fallback_url: isYt 
           ? `https://www.youtube.com/watch?v=${youtubeId}` 
-          : (selectedFile ? URL.createObjectURL(selectedFile) : driveDetails?.previewLink || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'),
+          : (selectedFile ? URL.createObjectURL(selectedFile) : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'),
         thumbnail_url: thumb,
         overview: overview.trim() || 'A captivating short film uploaded by an independent filmmaker.',
         status: 'approved',
       });
+
+      if (selectedFile && newFilm?.id) {
+        try {
+          await saveUploadedVideo(newFilm.id, selectedFile);
+          if (newFilm.drive_file_id) {
+            await saveUploadedVideo(newFilm.drive_file_id, selectedFile);
+          }
+        } catch (err) {
+          console.warn('Could not save video to IndexedDB:', err);
+        }
+      }
 
       setIsSubmitting(false);
       router.push(`/film/${newFilm.id}`);
@@ -495,6 +511,80 @@ export default function UploadFlowPage() {
                     className="w-full bg-[#0B0C10] border border-gray-700 rounded-lg p-3 text-[#F5F5F5] focus:outline-none focus:border-[#FFD60A]"
                   />
                 </div>
+              </div>
+
+              {/* THUMBNAIL IMAGE (OPTIONAL) */}
+              <div className="bg-[#1F2833]/45 p-4 rounded-xl border border-gray-800 space-y-3">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                  <span className="font-black text-gray-200 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                    <ImageIcon className="w-3.5 h-3.5 text-[#FFD60A]" /> Thumbnail Image <span className="text-gray-400 font-normal">(Optional)</span>
+                  </span>
+                  {(customThumbnailFile || customThumbnailUrl) && (
+                    <button
+                      type="button"
+                      onClick={() => { setCustomThumbnailFile(''); setCustomThumbnailUrl(''); }}
+                      className="text-[10px] text-red-400 hover:underline font-bold"
+                    >
+                      Clear Thumbnail
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-gray-400 leading-normal">
+                  Upload a thumbnail cover photo or paste an image link. If left blank, Streamix will automatically generate one for your movie.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-gray-400 uppercase tracking-wider mb-1">
+                      Upload Cover Image
+                    </label>
+                    <input
+                      type="file"
+                      id="user-thumb-file-u"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setCustomThumbnailFile(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="user-thumb-file-u"
+                      className="block text-center bg-[#0B0C10] hover:bg-[#0B0C10]/80 border border-gray-800 text-gray-300 font-bold px-3 py-2.5 rounded-lg cursor-pointer transition-colors"
+                    >
+                      {customThumbnailFile ? '✓ Image Attached' : 'Upload Cover Image...'}
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-400 uppercase tracking-wider mb-1">
+                      Or Image URL
+                    </label>
+                    <input
+                      type="url"
+                      value={customThumbnailUrl}
+                      onChange={(e) => setCustomThumbnailUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-[#F5F5F5] focus:outline-none focus:border-[#FFD60A]"
+                    />
+                  </div>
+                </div>
+
+                {(customThumbnailFile || customThumbnailUrl) && (
+                  <div className="mt-2 p-2 bg-[#0B0C10] rounded-lg border border-gray-800 flex items-center gap-3">
+                    <img
+                      src={customThumbnailFile || customThumbnailUrl}
+                      alt="Thumbnail preview"
+                      className="w-16 h-10 object-cover rounded border border-[#FFD60A]"
+                    />
+                    <span className="text-[10px] text-[#FFD60A] font-bold">Custom thumbnail active</span>
+                  </div>
+                )}
               </div>
 
               {/* DIRECTOR ASSIGNMENT BOX */}

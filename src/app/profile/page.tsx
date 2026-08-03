@@ -14,13 +14,15 @@ import {
   Sparkles,
   Key,
   ShieldCheck,
-  LogOut
+  LogOut,
+  Bookmark
 } from 'lucide-react';
 import { useShortFilm } from '../../context/ShortFilmContext';
+import { FilmCard } from '../../components/FilmCard';
 
 export default function UserProfilePage() {
   const router = useRouter();
-  const { activePersona, isLoaded, updateUserProfile, logoutUser, logoutAdmin } = useShortFilm();
+  const { activePersona, isLoaded, updateUserProfile, logoutUser, logoutAdmin, wishlistFilmIds, films } = useShortFilm();
 
   // Guard for logged in users
   useEffect(() => {
@@ -380,6 +382,48 @@ export default function UserProfilePage() {
             </form>
           </div>
 
+        </div>
+
+        {/* MY WISHLIST SECTION */}
+        <div className="card-flat p-6 sm:p-8 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-700/50 pb-4">
+            <div className="flex items-center gap-2">
+              <Bookmark className="w-5 h-5 text-red-500 fill-current" />
+              <h2 className="text-lg font-black text-[#F5F5F5] uppercase tracking-wider">
+                My Saved Wishlist ({wishlistFilmIds.length})
+              </h2>
+            </div>
+            {wishlistFilmIds.length > 0 && (
+              <span className="text-xs text-gray-400 font-bold">
+                {wishlistFilmIds.length} {wishlistFilmIds.length === 1 ? 'film saved' : 'films saved'}
+              </span>
+            )}
+          </div>
+
+          {wishlistFilmIds.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {films
+                .filter((f) => wishlistFilmIds.includes(f.id))
+                .map((film) => (
+                  <FilmCard key={film.id} film={film} />
+                ))}
+            </div>
+          ) : (
+            <div className="bg-[#0B0C10] p-8 text-center rounded-2xl border border-gray-800 space-y-3">
+              <Bookmark className="w-10 h-10 text-gray-600 mx-auto" />
+              <p className="text-xs text-gray-400 font-medium">Your wishlist is currently empty.</p>
+              <p className="text-[11px] text-gray-500 max-w-sm mx-auto">
+                Explore short films on Streamix and click the bookmark button to save them to your personal collection.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/')}
+                className="btn-gold text-xs px-5 py-2.5 inline-block font-extrabold shadow-md mt-2"
+              >
+                Browse Short Films
+              </button>
+            </div>
+          )}
         </div>
 
       </div>
