@@ -23,6 +23,7 @@ import { useShortFilm } from '../../context/ShortFilmContext';
 import { MoodTag } from '../../types/shortfilm';
 import { uploadVideoToGoogleDrive, detectVideoDuration, formatDuration } from '../../services/driveService';
 import { extractYouTubeId, getYouTubeThumbnail, isYouTubeUrl } from '../../utils/youtubeUtils';
+import { extractDriveFileId } from '../../utils/googleDriveUtils';
 import { saveUploadedVideo } from '../../utils/indexedDbVideo';
 
 export default function UploadFlowPage() {
@@ -38,8 +39,8 @@ export default function UploadFlowPage() {
     }
   }, [isLoaded, activePersona, router]);
 
-  // Mode: 'youtube' | 'file'
-  const [uploadMode, setUploadMode] = useState<'youtube' | 'file'>('youtube');
+  // Mode: 'youtube' | 'drive_url' | 'file'
+  const [uploadMode, setUploadMode] = useState<'youtube' | 'drive_url' | 'file'>('drive_url');
 
   // Upload Steps: 1 = Select Source, 2 = Processing/Upload, 3 = Metadata Form, 4 = Confirm & Publish
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
@@ -48,6 +49,11 @@ export default function UploadFlowPage() {
   const [youtubeUrlInput, setYoutubeUrlInput] = useState('');
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [youtubeError, setYoutubeError] = useState<string | null>(null);
+
+  // Google Drive URL State
+  const [driveUrlInput, setDriveUrlInput] = useState('');
+  const [driveUrlError, setDriveUrlError] = useState<string | null>(null);
+  const [pastedDriveId, setPastedDriveId] = useState<string | null>(null);
 
   // File State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -103,6 +109,24 @@ export default function UploadFlowPage() {
     }
 
     setYoutubeId(extracted);
+    if (!title) {
+      setTitle('Short Film #' + extracted.substring(0, 5));
+    }
+    setCurrentStep(3);
+  };
+
+  // Handle Google Drive URL Submit
+  const handleDriveUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDriveUrlError(null);
+
+    const extracted = extractDriveFileId(driveUrlInput);
+    if (!extracted) {
+      setDriveUrlError('Invalid Google Drive URL. Please paste a valid public Google Drive video link (e.g., https://drive.google.com/file/d/.../view)');
+      return;
+    }
+
+    setPastedDriveId(extracted);
     if (!title) {
       setTitle('Short Film #' + extracted.substring(0, 5));
     }
@@ -210,9 +234,15 @@ export default function UploadFlowPage() {
 
       // 3. Finalize Video details
       const isYt = uploadMode === 'youtube' && youtubeId;
+      const isDriveUrl = uploadMode === 'drive_url' && pastedDriveId;
       const thumb = customThumbnailFile || customThumbnailUrl.trim() || (isYt 
         ? getYouTubeThumbnail(youtubeId!) 
         : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80');
+
+      const resolvedDriveId = isDriveUrl ? pastedDriveId! : (driveDetails?.fileId || (isYt ? `yt-${youtubeId}` : 'sample-id'));
+      const resolvedDriveLink = isDriveUrl 
+        ? `https://drive.google.com/file/d/${pastedDriveId}/preview` 
+        : (driveDetails?.previewLink || (isYt ? `https://www.youtube.com/watch?v=${youtubeId}` : ''));
 
       const newFilm = addFilm({
         title: title.trim(),
@@ -223,14 +253,14 @@ export default function UploadFlowPage() {
         hero_names: finalHeroNames.length > 0 ? finalHeroNames : ['Independent Cast'],
         duration_sec: durationSec,
         mood_tag: moodTag,
-        drive_file_id: driveDetails?.fileId || (isYt ? `yt-${youtubeId}` : 'sample-id'),
-        drive_link: driveDetails?.previewLink || (isYt ? `https://www.youtube.com/watch?v=${youtubeId}` : ''),
+        drive_file_id: resolvedDriveId,
+        drive_link: resolvedDriveLink,
         youtube_url: isYt ? `https://www.youtube.com/watch?v=${youtubeId}` : undefined,
         youtube_id: isYt ? youtubeId! : undefined,
         video_source: isYt ? 'youtube' : 'drive',
         video_fallback_url: isYt 
           ? `https://www.youtube.com/watch?v=${youtubeId}` 
-          : (selectedFile ? URL.createObjectURL(selectedFile) : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'),
+          : (isDriveUrl ? `https://drive.google.com/file/d/${pastedDriveId}/preview` : (selectedFile ? URL.createObjectURL(selectedFile) : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4')),
         thumbnail_url: thumb,
         overview: overview.trim() || 'A captivating short film uploaded by an independent filmmaker.',
         status: 'approved',
@@ -320,36 +350,85 @@ export default function UploadFlowPage() {
         {currentStep === 1 && (
           <div className="space-y-6">
             {/* Mode Switcher Buttons */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                onClick={() => setUploadMode('drive_url')}
+                className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center gap-2 ${
+                  uploadMode === 'drive_url'
+                    ? 'bg-[#1F2833] border-[#FFD60A] text-[#FFD60A] shadow-lg scale-[1.02]'
+                    : 'bg-[#1F2833]/30 border-gray-800 text-gray-400 hover:text-white'
+                }`}
+              >
+                <LinkIcon className="w-6 h-6" />
+                <span className="text-xs font-black uppercase tracking-wider">Google Drive Link</span>
+                <span className="text-[9px] opacity-75">Paste Google Drive Video URL</span>
+              </button>
+
               <button
                 onClick={() => setUploadMode('youtube')}
-                className={`p-6 rounded-2xl border text-center transition-all flex flex-col items-center gap-3 ${
+                className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center gap-2 ${
                   uploadMode === 'youtube'
                     ? 'bg-[#1F2833] border-[#FFD60A] text-[#FFD60A] shadow-lg scale-[1.02]'
                     : 'bg-[#1F2833]/30 border-gray-800 text-gray-400 hover:text-white'
                 }`}
               >
-                <Youtube className="w-8 h-8" />
-                <span className="text-sm font-black uppercase tracking-wider">YouTube Stream Link</span>
-                <span className="text-[10px] opacity-75">Stream via video identifier URL</span>
+                <Youtube className="w-6 h-6" />
+                <span className="text-xs font-black uppercase tracking-wider">YouTube Link</span>
+                <span className="text-[9px] opacity-75">Stream via YouTube video URL</span>
               </button>
 
               <button
                 onClick={() => setUploadMode('file')}
-                className={`p-6 rounded-2xl border text-center transition-all flex flex-col items-center gap-3 ${
+                className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center gap-2 ${
                   uploadMode === 'file'
                     ? 'bg-[#1F2833] border-[#FFD60A] text-[#FFD60A] shadow-lg scale-[1.02]'
                     : 'bg-[#1F2833]/30 border-gray-800 text-gray-400 hover:text-white'
                 }`}
               >
-                <FileVideo className="w-8 h-8" />
-                <span className="text-sm font-black uppercase tracking-wider">Local Video File</span>
-                <span className="text-[10px] opacity-75">Upload straight to Google Drive</span>
+                <FileVideo className="w-6 h-6" />
+                <span className="text-xs font-black uppercase tracking-wider">Local Video File</span>
+                <span className="text-[9px] opacity-75">Upload file from your computer</span>
               </button>
             </div>
 
             {/* Source Inputs */}
-            {uploadMode === 'youtube' ? (
+            {uploadMode === 'drive_url' ? (
+              <form onSubmit={handleDriveUrlSubmit} className="card-flat p-6 sm:p-8 space-y-4">
+                <div className="space-y-2">
+                  <h3 className="font-bold text-sm text-[#F5F5F5]">Enter Google Drive Video URL</h3>
+                  <p className="text-[11px] text-gray-400 leading-normal">
+                    Paste any public Google Drive video link (e.g. <code className="text-[#FFD60A]">https://drive.google.com/file/d/.../view</code>). Streamix will extract the file ID and prepare the embedded stream player for Vercel deployment.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center bg-[#0B0C10] border border-gray-800 focus-within:border-[#FFD60A] rounded-xl px-4 py-3 text-xs shadow-inner">
+                    <LinkIcon className="w-4 h-4 text-gray-500 mr-2 shrink-0" />
+                    <input
+                      type="url"
+                      required
+                      value={driveUrlInput}
+                      onChange={(e) => setDriveUrlInput(e.target.value)}
+                      placeholder="e.g. https://drive.google.com/file/d/1abcXYZ.../view"
+                      className="bg-transparent text-[#F5F5F5] w-full focus:outline-none font-semibold"
+                    />
+                  </div>
+                  {driveUrlError && (
+                    <div className="text-[11px] text-[#E63946] font-bold">{driveUrlError}</div>
+                  )}
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    className="btn-gold text-xs px-6 py-3 font-extrabold flex items-center gap-1.5 shadow-lg"
+                  >
+                    <span>Fetch Drive Media</span>
+                    <ArrowRight className="w-4 h-4 text-[#0B0C10]" />
+                  </button>
+                </div>
+              </form>
+            ) : uploadMode === 'youtube' ? (
               <form onSubmit={handleYouTubeSubmit} className="card-flat p-6 sm:p-8 space-y-4">
                 <div className="space-y-2">
                   <h3 className="font-bold text-sm text-[#F5F5F5]">Enter YouTube Video URL</h3>
@@ -449,15 +528,15 @@ export default function UploadFlowPage() {
                 )}
                 <div>
                   <span className="font-bold text-[#FFD60A] block">
-                    {uploadMode === 'youtube' ? 'YouTube Stream Ready' : 'Drive Video Uploaded'}
+                    {uploadMode === 'youtube' ? 'YouTube Stream Ready' : uploadMode === 'drive_url' ? 'Google Drive Stream Ready' : 'Drive Video Uploaded'}
                   </span>
                   <span className="text-gray-400">
-                    {uploadMode === 'youtube' ? `YouTube ID: ${youtubeId}` : `Drive ID: ${driveDetails?.fileId}`}
+                    {uploadMode === 'youtube' ? `YouTube ID: ${youtubeId}` : uploadMode === 'drive_url' ? `Drive ID: ${pastedDriveId}` : `Drive ID: ${driveDetails?.fileId}`}
                   </span>
                 </div>
               </div>
               <span className="badge-amber text-[10px] uppercase font-bold">
-                {uploadMode === 'youtube' ? 'YouTube Stream' : 'Drive Stream'}
+                {uploadMode === 'youtube' ? 'YouTube Stream' : uploadMode === 'drive_url' ? 'Google Drive' : 'Drive Stream'}
               </span>
             </div>
 
