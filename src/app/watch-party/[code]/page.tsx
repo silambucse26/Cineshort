@@ -20,7 +20,9 @@ import {
   ArrowLeft,
   Settings,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  ShieldAlert
 } from 'lucide-react';
 import { CinemaVideoPlayer } from '@/components/CinemaVideoPlayer';
 import { useShortFilm } from '../../../context/ShortFilmContext';
@@ -50,6 +52,8 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
   const [selectedFilmId, setSelectedFilmId] = useState<string>('');
   const [hostId, setHostId] = useState<string>('');
   const [hostName, setHostName] = useState<string>('Host');
+  const [hostOnlyNotice, setHostOnlyNotice] = useState<string | null>(null);
+
   const [isCopiedLink, setIsCopiedLink] = useState(false);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
 
@@ -68,81 +72,207 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
     }
   ]);
 
-  const isHost = activePersona?.id === hostId || !hostId;
+  // Host Privilege Check
+  const isHost = Boolean(
+    (hostId && activePersona?.id && hostId === activePersona.id) ||
+    (!hostId && activePersona?.id)
+  );
 
-  // Initialize room data from localStorage or create room
+  // Load Room Data from Supabase / localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const savedRoom = localStorage.getItem(`streamix_room_${roomCode}`);
-    if (savedRoom) {
-      try {
-        const parsed = JSON.parse(savedRoom);
-        setRoomTitle(parsed.title || 'Watch Room');
-        setSelectedFilmId(parsed.filmId || (approvedFilms[0]?.id || ''));
-        setHostId(parsed.hostId || activePersona?.id || '');
-        setHostName(parsed.hostName || 'Room Host');
-      } catch {}
-    } else {
-      // Default room setup if directly visited via URL code
-      const defaultFilm = approvedFilms[0]?.id || films[0]?.id || '';
-      setSelectedFilmId(defaultFilm);
-      setHostId(activePersona?.id || 'user-viewer');
-      setHostName(activePersona?.name || 'Party Host');
+    const loadRoomState = async () => {
+      let fetchedTitle = '';
+      let fetchedFilmId = '';
+      let fetchedHostId = '';
+      let fetchedHostName = '';
 
-      const roomObj = {
-        code: roomCode,
-        title: `Watch Party ${roomCode}`,
-        filmId: defaultFilm,
-        hostId: activePersona?.id || 'user-viewer',
-        hostName: activePersona?.name || 'Party Host',
-        createdAt: new Date().toISOString(),
-      };
-      localStorage.setItem(`streamix_room_${roomCode}`, JSON.stringify(roomObj));
-    }
+      // 1. Fetch from Supabase watch_rooms table first
+      if (isSupabaseConfigured) {
+        try {
+          const { data: roomData } = await supabase
+            .from('watch_rooms')
+            .select('*')
+            .eq('room_code', roomCode)
+            .maybeSingle();
 
-    // Load saved chat messages
-    const savedMessages = localStorage.getItem(`streamix_messages_${roomCode}`);
-    if (savedMessages) {
-      try {
-        setChatMessages(JSON.parse(savedMessages));
-      } catch {
-        setChatMessages([
+          if (roomData) {
+            fetchedTitle = roomData.room_title || `Watch Room ${roomCode}`;
+            fetchedFilmId = roomData.film_id;
+            fetchedHostId = roomData.host_user_id;
+            fetchedHostName = roomData.host_user_name || 'Room Host';
+          }
+        } catch (err) {
+          console.warn('Could not query Supabase watch_rooms:', err);
+        }
+      }
+
+      // 2. Fallback to localStorage if Supabase did not find the room
+      if (!fetchedFilmId) {
+        const savedRoom = localStorage.getItem(`streamix_room_${roomCode}`);
+        if (savedRoom) {
+          try {
+            const parsed = JSON.parse(savedRoom);
+            fetchedTitle = parsed.title || `Watch Room ${roomCode}`;
+            fetchedFilmId = parsed.filmId;
+            fetchedHostId = parsed.hostId;
+            fetchedHostName = parsed.hostName || 'Room Host';
+          } catch {}
+        }
+      }
+
+      // 3. Fallback default setup if visiting room directly without prior data
+      if (!fetchedFilmId) {
+        const defaultFilm = approvedFilms[0]?.id || films[0]?.id || '';
+        fetchedFilmId = defaultFilm;
+        fetchedHostId = activePersona?.id || 'user-viewer';
+        fetchedHostName = activePersona?.name || 'Party Host';
+        fetchedTitle = `Watch Party ${roomCode}`;
+
+        const roomObj = {
+          code: roomCode,
+          title: fetchedTitle,
+          filmId: defaultFilm,
+          hostId: fetchedHostId,
+          hostName: fetchedHostName,
+          createdAt: new Date().toISOString(),
+        };
+        localStorage.setItem(`streamix_room_${roomCode}`, JSON.stringify(roomObj));
+
+        if (isSupabaseConfigured) {
+          try {
+            await supabase.from('watch_rooms').upsert([
+              {
+                room_code: roomCode,
+                room_title: fetchedTitle,
+                host_user_id: fetchedHostId,
+                host_user_name: fetchedHostName,
+                film_id: defaultFilm,
+                is_playing: false,
+                current_time_sec: 0,
+                is_active: true,
+              }
+            ], { onConflict: 'room_code' });
+          } catch {}
+        }
+      }
+
+      setRoomTitle(fetchedTitle);
+      setSelectedFilmId(fetchedFilmId);
+      setHostId(fetchedHostId);
+      setHostName(fetchedHostName);
+    };
+
+    loadRoomState();
+
+    // Load initial chat messages from Supabase or localStorage
+    const loadChatMessages = async () => {
+      let initialMsgs: ChatMessage[] = [];
+
+      if (isSupabaseConfigured) {
+        try {
+          const { data: dbMsgs } = await supabase
+            .from('watch_room_messages')
+            .select('*')
+            .eq('room_code', roomCode)
+            .order('created_at', { ascending: true })
+            .limit(50);
+
+          if (dbMsgs && dbMsgs.length > 0) {
+            initialMsgs = dbMsgs.map((m) => ({
+              id: m.id,
+              senderId: m.user_id,
+              senderName: m.user_name,
+              senderAvatar: m.user_avatar,
+              text: m.message,
+              timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              isSystem: Boolean(m.is_system_msg),
+            }));
+          }
+        } catch {}
+      }
+
+      if (initialMsgs.length === 0) {
+        const savedMessages = localStorage.getItem(`streamix_messages_${roomCode}`);
+        if (savedMessages) {
+          try {
+            initialMsgs = JSON.parse(savedMessages);
+          } catch {}
+        }
+      }
+
+      if (initialMsgs.length === 0) {
+        initialMsgs = [
           {
             id: 'msg-welcome',
             senderId: 'system',
             senderName: 'System',
-            text: `Welcome to Watch Room ${roomCode}! Chat live and enjoy synchronized movie playback.`,
+            text: `Welcome to Watch Room ${roomCode}! Chat live and enjoy real-time movie playback.`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             isSystem: true,
           }
-        ]);
+        ];
       }
-    } else {
-      setChatMessages([
-        {
-          id: 'msg-welcome',
-          senderId: 'system',
-          senderName: 'System',
-          text: `Welcome to Watch Room ${roomCode}! Chat live and enjoy synchronized movie playback.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isSystem: true,
-        }
-      ]);
-    }
+
+      setChatMessages(initialMsgs);
+    };
+
+    loadChatMessages();
   }, [roomCode, approvedFilms, films, activePersona]);
 
-  // BroadcastChannel for cross-tab realtime room synchronization
+  // Real-time synchronization via Supabase Realtime & BroadcastChannel
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    let channel: BroadcastChannel | null = null;
+    // Supabase Realtime Subscription
+    let supabaseChannel: any = null;
+    if (isSupabaseConfigured) {
+      supabaseChannel = supabase.channel(`watch_party_${roomCode}`)
+        .on('broadcast', { event: 'CHANGE_FILM' }, (payload) => {
+          if (payload.payload?.filmId) {
+            setSelectedFilmId(payload.payload.filmId);
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                id: `sys-${Date.now()}`,
+                senderId: 'system',
+                senderName: 'System',
+                text: `🎬 Movie changed to "${payload.payload.filmTitle}" by room host (${payload.payload.hostName || 'Host'}).`,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isSystem: true,
+              }
+            ]);
+          }
+        })
+        .on('broadcast', { event: 'CHAT_MSG' }, (payload) => {
+          if (payload.payload?.message) {
+            const msg = payload.payload.message;
+            setChatMessages((prev) => {
+              if (prev.some((m) => m.id === msg.id)) return prev;
+              return [...prev, msg];
+            });
+          }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'watch_rooms', filter: `room_code=eq.${roomCode}` }, (payload) => {
+          if (payload.new && payload.new.film_id) {
+            setSelectedFilmId(payload.new.film_id);
+          }
+        })
+        .subscribe();
+    }
+
+    // Fallback Cross-tab BroadcastChannel
+    let crossTabChannel: BroadcastChannel | null = null;
     try {
-      channel = new BroadcastChannel(`watch_party_${roomCode}`);
-      channel.onmessage = (event) => {
+      crossTabChannel = new BroadcastChannel(`watch_party_${roomCode}`);
+      crossTabChannel.onmessage = (event) => {
         const data = event.data;
         if (data.type === 'CHAT_MSG') {
-          setChatMessages((prev) => [...prev, data.message]);
+          setChatMessages((prev) => {
+            if (prev.some((m) => m.id === data.message.id)) return prev;
+            return [...prev, data.message];
+          });
         } else if (data.type === 'CHANGE_FILM') {
           setSelectedFilmId(data.filmId);
           setChatMessages((prev) => [
@@ -151,7 +281,7 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
               id: `sys-${Date.now()}`,
               senderId: 'system',
               senderName: 'System',
-              text: `🎬 Movie changed to "${data.filmTitle}" by room host.`,
+              text: `🎬 Movie changed to "${data.filmTitle}" by room host (${data.hostName || 'Host'}).`,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               isSystem: true,
             }
@@ -161,7 +291,8 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
     } catch {}
 
     return () => {
-      if (channel) channel.close();
+      if (crossTabChannel) crossTabChannel.close();
+      if (supabaseChannel) supabase.removeChannel(supabaseChannel);
     };
   }, [roomCode]);
 
@@ -179,7 +310,7 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
 
   const currentFilm = getFilmById(selectedFilmId) || films.find(f => f.id === selectedFilmId) || approvedFilms[0];
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputMessage.trim();
     if (!text) return;
 
@@ -195,7 +326,29 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
     setChatMessages((prev) => [...prev, newMsg]);
     if (!textToSend) setInputMessage('');
 
-    // Broadcast message to other open tabs in room
+    // 1. Broadcast over Supabase Realtime channel & insert into DB
+    if (isSupabaseConfigured) {
+      try {
+        supabase.channel(`watch_party_${roomCode}`).send({
+          type: 'broadcast',
+          event: 'CHAT_MSG',
+          payload: { message: newMsg }
+        });
+
+        supabase.from('watch_room_messages').insert([
+          {
+            room_code: roomCode,
+            user_id: newMsg.senderId,
+            user_name: newMsg.senderName,
+            user_avatar: newMsg.senderAvatar,
+            message: text,
+            is_system_msg: false,
+          }
+        ]).then();
+      } catch {}
+    }
+
+    // 2. Broadcast over local BroadcastChannel
     try {
       const bc = new BroadcastChannel(`watch_party_${roomCode}`);
       bc.postMessage({ type: 'CHAT_MSG', message: newMsg });
@@ -203,13 +356,31 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
     } catch {}
   };
 
-  const handleHostSelectFilm = (filmId: string) => {
+  const handleHostSelectFilm = async (filmId: string) => {
+    // ENFORCE HOST CONTROL PERMISSION
+    if (!isHost) {
+      const warningText = `Only the room host (${hostName}) has permission to change the movie.`;
+      setHostOnlyNotice(warningText);
+      setTimeout(() => setHostOnlyNotice(null), 4000);
+
+      const sysNoticeMsg: ChatMessage = {
+        id: `sys-denied-${Date.now()}`,
+        senderId: 'system',
+        senderName: 'System',
+        text: `🔒 Access Denied: Only room host (${hostName}) can change the movie.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isSystem: true,
+      };
+      setChatMessages((prev) => [...prev, sysNoticeMsg]);
+      return;
+    }
+
     const targetFilm = getFilmById(filmId);
     if (!targetFilm) return;
 
     setSelectedFilmId(filmId);
 
-    // Save state
+    // Save state locally
     const savedRoom = localStorage.getItem(`streamix_room_${roomCode}`);
     if (savedRoom) {
       try {
@@ -218,19 +389,37 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
       } catch {}
     }
 
-    // Broadcast film change to all participants
+    // Update film in Supabase & broadcast real-time event
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('watch_rooms')
+          .update({ film_id: filmId, updated_at: new Date().toISOString() })
+          .eq('room_code', roomCode);
+
+        supabase.channel(`watch_party_${roomCode}`).send({
+          type: 'broadcast',
+          event: 'CHANGE_FILM',
+          payload: { filmId, filmTitle: targetFilm.title, hostName }
+        });
+      } catch (err) {
+        console.warn('Could not update room film in Supabase:', err);
+      }
+    }
+
+    // Broadcast cross-tab channel
     try {
       const bc = new BroadcastChannel(`watch_party_${roomCode}`);
-      bc.postMessage({ type: 'CHANGE_FILM', filmId, filmTitle: targetFilm.title });
+      bc.postMessage({ type: 'CHANGE_FILM', filmId, filmTitle: targetFilm.title, hostName });
       bc.close();
     } catch {}
 
-    // Add system notification message in chat
+    // System notification message in chat
     const sysMsg: ChatMessage = {
       id: `sys-${Date.now()}`,
       senderId: 'system',
       senderName: 'System',
-      text: `🎬 Room host switched film to "${targetFilm.title}".`,
+      text: `🎬 Room host (${hostName}) switched film to "${targetFilm.title}".`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isSystem: true,
     };
@@ -482,13 +671,36 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
             {/* TAB 2: SELECT MOVIE (Host Movie Selector) */}
             {activeTab === 'movies' && (
               <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#0B0C10]">
+                {/* Host Access Banner */}
+                {isHost ? (
+                  <div className="bg-[#FFD60A]/10 border border-[#FFD60A]/40 p-3 rounded-xl flex items-center gap-2.5 text-xs text-[#FFD60A] font-bold">
+                    <Crown className="w-4 h-4 shrink-0 text-[#FFD60A]" />
+                    <span>Host Controls Active — Select a movie to change playback for everyone live.</span>
+                  </div>
+                ) : (
+                  <div className="bg-red-950/40 border border-red-800/60 p-3 rounded-xl flex items-center gap-2.5 text-xs text-red-300 font-semibold">
+                    <Lock className="w-4 h-4 shrink-0 text-red-400" />
+                    <span>Host Controls Locked — Only Room Host (<strong className="text-[#FFD60A]">{hostName}</strong>) can change the movie.</span>
+                  </div>
+                )}
+
+                {hostOnlyNotice && (
+                  <div className="bg-red-600 text-white text-xs p-2.5 rounded-xl font-extrabold text-center shadow-lg animate-bounce">
+                    {hostOnlyNotice}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between border-b border-gray-800 pb-2">
                   <span className="text-xs font-black uppercase text-[#FFD60A] tracking-wider">
                     Room Film Catalog ({approvedFilms.length})
                   </span>
-                  {isHost && (
-                    <span className="text-[10px] bg-green-950 text-green-400 font-bold px-2 py-0.5 rounded border border-green-800">
-                      Host Controls Active
+                  {isHost ? (
+                    <span className="text-[10px] bg-green-950 text-green-400 font-bold px-2 py-0.5 rounded border border-green-800 flex items-center gap-1">
+                      <Crown className="w-3 h-3" /> Host Control Enabled
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-red-950 text-red-400 font-bold px-2 py-0.5 rounded border border-red-800 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Member View Only
                     </span>
                   )}
                 </div>
@@ -498,10 +710,12 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
                     <div
                       key={film.id}
                       onClick={() => handleHostSelectFilm(film.id)}
-                      className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-colors ${
+                      className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
                         selectedFilmId === film.id
                           ? 'bg-[#1F2833] border-[#FFD60A]'
-                          : 'bg-[#0B0C10] border-gray-800 hover:border-gray-700'
+                          : isHost
+                          ? 'bg-[#0B0C10] border-gray-800 hover:border-gray-700 cursor-pointer'
+                          : 'bg-[#0B0C10]/60 border-gray-900 cursor-not-allowed opacity-80'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 overflow-hidden">
@@ -511,15 +725,24 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
                           className="w-12 h-9 object-cover rounded shrink-0 border border-white/10"
                         />
                         <div className="overflow-hidden">
-                          <h4 className="font-bold text-xs text-[#F5F5F5] truncate">{film.title}</h4>
+                          <h4 className="font-bold text-xs text-[#F5F5F5] truncate flex items-center gap-1.5">
+                            <span>{film.title}</span>
+                            {!isHost && selectedFilmId !== film.id && (
+                              <Lock className="w-3 h-3 text-gray-500 shrink-0" />
+                            )}
+                          </h4>
                           <span className="text-[10px] text-gray-400 block">{film.director_name}</span>
                         </div>
                       </div>
-                      {selectedFilmId === film.id && (
+                      {selectedFilmId === film.id ? (
                         <span className="text-[10px] font-black text-[#FFD60A] uppercase bg-[#FFD60A]/10 px-2 py-1 rounded border border-[#FFD60A]/30">
                           Now Playing
                         </span>
-                      )}
+                      ) : !isHost ? (
+                        <span className="text-[9px] font-bold text-gray-500 bg-gray-900 px-2 py-1 rounded border border-gray-800 flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" /> Locked
+                        </span>
+                      ) : null}
                     </div>
                   ))}
                 </div>

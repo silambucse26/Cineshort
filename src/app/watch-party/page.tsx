@@ -22,6 +22,8 @@ import { useShortFilm } from '../../context/ShortFilmContext';
 import { ShortFilm } from '../../types/shortfilm';
 import { formatDuration } from '../../services/driveService';
 
+import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
+
 function WatchPartyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,7 +56,7 @@ function WatchPartyContent() {
     return code;
   };
 
-  const handleCreateRoom = (e: React.FormEvent) => {
+  const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFilmId) {
       setErrorMsg('Please select a short film for your watch room.');
@@ -62,19 +64,44 @@ function WatchPartyContent() {
     }
 
     const code = generateRoomCode();
-    // Save room data into localStorage for instant synchronization across tabs
+    const roomTitleFinal = roomTitle.trim() || `${selectedFilm?.title || 'Film'} Watch Room`;
+    const hostId = activePersona?.id || 'user-viewer';
+    const hostName = activePersona?.name || 'Watch Party Host';
+
+    // Save room data into localStorage for instant local tab synchronization
     const initialRoomData = {
       code,
-      title: roomTitle.trim() || `${selectedFilm?.title || 'Film'} Watch Room`,
+      title: roomTitleFinal,
       filmId: selectedFilmId,
-      hostId: activePersona?.id || 'user-viewer',
-      hostName: activePersona?.name || 'Watch Party Host',
+      hostId,
+      hostName,
       isPlaying: false,
       currentTime: 0,
       createdAt: new Date().toISOString(),
     };
 
     localStorage.setItem(`streamix_room_${code}`, JSON.stringify(initialRoomData));
+
+    // Save room to Supabase if configured
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('watch_rooms').upsert([
+          {
+            room_code: code,
+            room_title: roomTitleFinal,
+            host_user_id: hostId,
+            host_user_name: hostName,
+            film_id: selectedFilmId,
+            is_playing: false,
+            current_time_sec: 0,
+            is_active: true,
+          }
+        ], { onConflict: 'room_code' });
+      } catch (err) {
+        console.warn('Could not insert room into Supabase:', err);
+      }
+    }
+
     router.push(`/watch-party/${code}`);
   };
 

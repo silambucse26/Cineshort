@@ -46,7 +46,7 @@ export function getDriveDirectStreamUrl(url: string): string {
   if (!url || !url.includes('drive.google.com')) return url;
   const id = extractDriveFileId(url);
   if (id) {
-    return `https://drive.google.com/uc?export=download&id=${id}`;
+    return `https://lh3.googleusercontent.com/d/${id}`;
   }
   return url;
 }

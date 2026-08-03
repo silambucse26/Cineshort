@@ -140,8 +140,8 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   const isDrive = !isYouTube && (Boolean(driveLink) || Boolean(videoUrl && videoUrl.includes('drive.google.com')));
   const isSampleDrive = isDrive && Boolean(isSampleOrInvalidDriveUrl(driveLink || videoUrl));
 
-  // Allow toggling between Drive IFrame mode and App HD Direct Player mode
-  const [useDriveIframe, setUseDriveIframe] = useState<boolean>(Boolean(isDrive && !isSampleDrive));
+  // Native App HD Direct Player mode (Custom Controls)
+  const [useDriveIframe, setUseDriveIframe] = useState<boolean>(false);
 
   // State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -550,21 +550,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen
             />
-            
-            {/* Stream Mode Switcher Badge Overlay */}
-            <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 bg-black/80 text-[#FFD60A] border border-[#FFD60A]/40 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase backdrop-blur-md shadow-lg">
-                <Tv className="w-3.5 h-3.5 text-[#FFD60A]" /> Google Drive Stream
-              </span>
-              <button
-                onClick={() => setUseDriveIframe(false)}
-                className="bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-lg transition-transform active:scale-95"
-                title="Switch to HD App Video Stream"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>Switch to App HD Stream</span>
-              </button>
-            </div>
           </div>
         ) : (
           <div className="w-full h-full relative flex items-center justify-center bg-black">
