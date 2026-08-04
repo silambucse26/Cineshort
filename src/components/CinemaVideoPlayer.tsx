@@ -75,6 +75,9 @@ interface CinemaVideoPlayerProps {
   durationSec?: number;
   isTheaterMode?: boolean;
   onToggleTheater?: () => void;
+  chatMessages?: any[];
+  onPlayStateChange?: (isPlaying: boolean, currentTime: number) => void;
+  forcePlayState?: { isPlaying: boolean; timestamp: number } | null;
 }
 
 const SAMPLE_FALLBACK_VIDEO = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4';
@@ -128,6 +131,9 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
   durationSec = 120,
   isTheaterMode = false,
   onToggleTheater,
+  chatMessages,
+  onPlayStateChange,
+  forcePlayState,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -440,13 +446,31 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
     };
   }, [isYouTube, useDriveIframe, durationSec, activeVideoSrc]);
 
-  const togglePlay = () => {
+  useEffect(() => {
+    if (forcePlayState) {
+      if (forcePlayState.isPlaying) {
+        if (!isPlaying) togglePlay(true);
+      } else {
+        if (isPlaying) togglePlay(false);
+      }
+      if (Math.abs(currentTime - forcePlayState.timestamp) > 2) {
+        handleSkip(forcePlayState.timestamp - currentTime);
+      }
+    }
+  }, [forcePlayState]);
+
+  const togglePlay = (forceState?: boolean) => {
+    const nextState = forceState !== undefined ? forceState : !isPlaying;
+
     // If user clicks play while Drive iframe is active, switch to direct player so playback starts!
-    if (useDriveIframe) {
+    if (useDriveIframe && nextState) {
       setUseDriveIframe(false);
       setTimeout(() => {
         if (videoRef.current) {
-          videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+          videoRef.current.play().then(() => {
+            setIsPlaying(true);
+            onPlayStateChange?.(true, videoRef.current!.currentTime);
+          }).catch(() => {});
         }
       }, 100);
       return;
@@ -454,21 +478,23 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
 
     if (isYouTube && ytPlayerRef.current) {
       try {
-        if (isPlaying) {
+        if (!nextState) {
           ytPlayerRef.current.pauseVideo();
           setIsPlaying(false);
         } else {
           ytPlayerRef.current.playVideo();
           setIsPlaying(true);
         }
+        onPlayStateChange?.(nextState, ytPlayerRef.current.getCurrentTime() || 0);
       } catch {}
       return;
     }
 
     if (videoRef.current) {
-      if (isPlaying) {
+      if (!nextState) {
         videoRef.current.pause();
         setIsPlaying(false);
+        onPlayStateChange?.(false, videoRef.current.currentTime);
       } else {
         if (!activeVideoSrc || !isPlayableMediaUrl(activeVideoSrc) || videoRef.current.error) {
           setActiveVideoSrc(SAMPLE_FALLBACK_VIDEO);
@@ -480,6 +506,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
             .then(() => {
               setIsPlaying(true);
               setVideoError(false);
+              onPlayStateChange?.(true, videoRef.current!.currentTime);
             })
             .catch(() => {
               // Try unmuting or falling back to sample stream
@@ -493,6 +520,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
                 videoRef.current.play().then(() => {
                   setIsPlaying(true);
                   setVideoError(false);
+                  onPlayStateChange?.(true, videoRef.current!.currentTime);
                 }).catch(() => {});
               }
             });
@@ -704,7 +732,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
             <div id={ytDivId.current} className="w-full h-full" />
             <div 
               className="absolute inset-0 z-10 cursor-pointer bg-transparent"
-              onClick={togglePlay}
+              onClick={() => setShowControls(prev => !prev)}
             />
           </div>
         ) : isDrive && useDriveIframe ? (
@@ -728,7 +756,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
               className={`w-full h-full cursor-pointer ${
                 isFullscreen ? 'object-cover md:object-contain' : 'object-contain'
               }`}
-              onClick={togglePlay}
+              onClick={() => setShowControls(prev => !prev)}
             />
 
             {videoError && (
@@ -761,6 +789,21 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
             <span className="bg-black/85 text-white font-bold text-xs sm:text-sm px-3.5 py-1.5 rounded-lg border border-[#FFD60A]/30 backdrop-blur-md shadow-md leading-relaxed inline-block">
               {getSubtitleText(currentTime, activeSubtitle, title, overview)}
             </span>
+          </div>
+        )}
+
+        {/* Live Chat Overlay (Fullscreen only) */}
+        {isFullscreen && chatMessages && chatMessages.length > 0 && (
+          <div 
+            className="absolute bottom-24 left-4 z-30 w-64 max-h-48 overflow-y-hidden pointer-events-none flex flex-col justify-end gap-1.5"
+            style={{ maskImage: 'linear-gradient(to bottom, transparent, black 20%, black 100%)' }}
+          >
+            {chatMessages.slice(-8).map((msg: any) => (
+              <div key={msg.id} className="text-white text-xs drop-shadow-md flex items-start gap-2 bg-black/30 rounded-lg p-1.5 backdrop-blur-sm">
+                <span className="font-bold text-[#FFD60A] shrink-0 text-shadow-sm">{msg.senderName}:</span>
+                <span className="break-words text-shadow-sm leading-tight">{msg.text}</span>
+              </div>
+            ))}
           </div>
         )}
 

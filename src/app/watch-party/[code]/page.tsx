@@ -53,6 +53,8 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
   const [hostId, setHostId] = useState<string>('');
   const [hostName, setHostName] = useState<string>('Host');
   const [hostOnlyNotice, setHostOnlyNotice] = useState<string | null>(null);
+  const [grantedAccessIds, setGrantedAccessIds] = useState<string[]>([]);
+  const [forcePlayState, setForcePlayState] = useState<{ isPlaying: boolean; timestamp: number } | null>(null);
 
   const [isCopiedLink, setIsCopiedLink] = useState(false);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
@@ -73,8 +75,10 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
   ]);
 
   // Host Privilege Check
+  const isTrueHost = Boolean(hostId && activePersona?.id && hostId === activePersona.id);
   const isHost = Boolean(
-    (hostId && activePersona?.id && hostId === activePersona.id) ||
+    isTrueHost ||
+    (activePersona?.id && grantedAccessIds.includes(activePersona.id)) ||
     (!hostId && activePersona?.id)
   );
 
@@ -254,6 +258,19 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
             });
           }
         })
+        .on('broadcast', { event: 'SYNC_PLAYBACK' }, (payload) => {
+          if (payload.payload && payload.payload.hostId !== activePersona?.id) {
+            setForcePlayState({
+              isPlaying: payload.payload.isPlaying,
+              timestamp: payload.payload.timestamp
+            });
+          }
+        })
+        .on('broadcast', { event: 'GRANT_ACCESS' }, (payload) => {
+          if (payload.payload?.userId) {
+            setGrantedAccessIds(prev => Array.from(new Set([...prev, payload.payload.userId])));
+          }
+        })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'watch_rooms', filter: `room_code=eq.${roomCode}` }, (payload) => {
           if (payload.new && payload.new.film_id) {
             setSelectedFilmId(payload.new.film_id);
@@ -286,6 +303,12 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
               isSystem: true,
             }
           ]);
+        } else if (data.type === 'SYNC_PLAYBACK') {
+          if (data.hostId !== activePersona?.id) {
+            setForcePlayState({ isPlaying: data.isPlaying, timestamp: data.timestamp });
+          }
+        } else if (data.type === 'GRANT_ACCESS') {
+          setGrantedAccessIds(prev => Array.from(new Set([...prev, data.userId])));
         }
       };
     } catch {}
@@ -442,6 +465,37 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
     }
   };
 
+  const handleGrantAccess = (userId: string, userName: string) => {
+    if (!isTrueHost) return;
+    setGrantedAccessIds(prev => Array.from(new Set([...prev, userId])));
+    
+    // Broadcast
+    if (isSupabaseConfigured) {
+      try {
+        supabase.channel(`watch_party_${roomCode}`).send({
+          type: 'broadcast',
+          event: 'GRANT_ACCESS',
+          payload: { userId }
+        });
+      } catch {}
+    }
+    try {
+      const bc = new BroadcastChannel(`watch_party_${roomCode}`);
+      bc.postMessage({ type: 'GRANT_ACCESS', userId });
+      bc.close();
+    } catch {}
+
+    const sysMsg: ChatMessage = {
+      id: `sys-${Date.now()}`,
+      senderId: 'system',
+      senderName: 'System',
+      text: `👑 Host granted playback controls to ${userName}.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isSystem: true,
+    };
+    setChatMessages((prev) => [...prev, sysMsg]);
+  };
+
   const quickEmojis = ['🍿', '🔥', '❤️', '👏', '😱', '🎉', '😍', '🎬'];
 
   return (
@@ -515,6 +569,27 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
                   overview={currentFilm.overview}
                   videoSource={currentFilm.video_source}
                   durationSec={currentFilm.duration_sec}
+                  chatMessages={chatMessages}
+                  forcePlayState={forcePlayState}
+                  onPlayStateChange={(isPlaying, currentTime) => {
+                    if (isHost) {
+                      const payload = { isPlaying, timestamp: currentTime, hostId: activePersona?.id };
+                      if (isSupabaseConfigured) {
+                        try {
+                          supabase.channel(`watch_party_${roomCode}`).send({
+                            type: 'broadcast',
+                            event: 'SYNC_PLAYBACK',
+                            payload
+                          });
+                        } catch {}
+                      }
+                      try {
+                        const bc = new BroadcastChannel(`watch_party_${roomCode}`);
+                        bc.postMessage({ type: 'SYNC_PLAYBACK', ...payload });
+                        bc.close();
+                      } catch {}
+                    }
+                  }}
                 />
 
                 {/* Movie Details Banner */}
@@ -773,11 +848,22 @@ export default function WatchPartyRoomPage({ params }: { params: Promise<{ code:
                         </div>
                       </div>
 
-                      {user.id === hostId && (
+                      {user.id === hostId ? (
                         <span className="text-[9px] font-black bg-[#FFD60A] text-[#0B0C10] px-2 py-0.5 rounded">
                           HOST
                         </span>
-                      )}
+                      ) : grantedAccessIds.includes(user.id) ? (
+                        <span className="text-[9px] font-black bg-blue-500 text-white px-2 py-0.5 rounded">
+                          CO-HOST
+                        </span>
+                      ) : isTrueHost ? (
+                        <button
+                          onClick={() => handleGrantAccess(user.id, user.name)}
+                          className="text-[9px] font-bold bg-[#1F2833] hover:bg-[#FFD60A] hover:text-[#0B0C10] text-[#FFD60A] border border-[#FFD60A] px-2 py-0.5 rounded transition-colors"
+                        >
+                          Give Access
+                        </button>
+                      ) : null}
                     </div>
                   ))}
                 </div>
