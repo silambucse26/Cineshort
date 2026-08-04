@@ -955,55 +955,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
                 )}
               </div>
 
-              {/* Subtitles CC Button */}
-              <div ref={subtitleRef} className="relative">
-                <button
-                  onClick={() => {
-                    setShowSubtitleDropdown(!showSubtitleDropdown);
-                    setShowQualityDropdown(false);
-                  }}
-                  className={`p-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 border transition-all ${
-                    showSubtitleDropdown
-                      ? 'bg-[#FFD60A] text-[#0B0C10] border-[#FFD60A]'
-                      : 'bg-black/40 text-gray-300 border-white/10 hover:border-white/30'
-                  }`}
-                  title="Subtitles / Captions"
-                >
-                  <Captions className={`w-3.5 h-3.5 ${activeSubtitle !== 'off' ? 'text-green-400' : 'text-[#FFD60A]'}`} />
-                  <span>CC</span>
-                </button>
-
-                {showSubtitleDropdown && (
-                  <div className="absolute right-0 bottom-full mb-2 w-32 bg-[#1F2833] border border-white/20 rounded-xl shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150">
-                    <div className="text-[9px] uppercase tracking-widest text-gray-400 font-black px-2.5 py-1 select-none">
-                      Subtitles
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      {[
-                        { val: 'off', lbl: 'Off' },
-                        { val: 'en', lbl: 'English' },
-                        { val: 'es', lbl: 'Spanish' }
-                      ].map((s) => (
-                        <button
-                          key={s.val}
-                          onClick={() => {
-                            setActiveSubtitle(s.val as any);
-                            setShowSubtitleDropdown(false);
-                          }}
-                          className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] font-bold transition-all ${
-                            activeSubtitle === s.val
-                              ? 'bg-[#FFD60A] text-[#0B0C10]'
-                              : 'text-gray-300 hover:bg-black/40 hover:text-white'
-                          }`}
-                        >
-                          <span>{s.lbl}</span>
-                          {activeSubtitle === s.val && <Check className="w-3.5 h-3.5" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
 
               {/* Theater Mode Button */}
               {onToggleTheater && (
