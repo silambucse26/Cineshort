@@ -142,9 +142,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
       if (qualityRef.current && !qualityRef.current.contains(event.target as Node)) {
         setShowQualityDropdown(false);
       }
-      if (subtitleRef.current && !subtitleRef.current.contains(event.target as Node)) {
-        setShowSubtitleDropdown(false);
-      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => {
@@ -738,7 +735,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
         {/* Center Play/Pause Overlay Button (Active for HTML5 & YouTube players) */}
         {(!isPlaying || showControls) && !useDriveIframe && (
           <button
-            onClick={togglePlay}
+            onClick={() => togglePlay()}
             className="absolute inset-0 m-auto w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] flex items-center justify-center shadow-[0_0_30px_rgba(255,214,10,0.8)] transition-transform transform active:scale-95 z-20 opacity-90 hover:opacity-100"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
