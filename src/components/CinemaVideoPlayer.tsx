@@ -802,7 +802,7 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
             {/* Left Side Controls: Play, Skip 10s, Mute/Volume */}
             <div className="flex items-center gap-2">
               <button
-                onClick={togglePlay}
+                onClick={() => togglePlay()}
                 className="p-1.5 hover:bg-white/20 text-[#FFD60A] rounded-full transition-colors active:scale-95"
                 title={isPlaying ? 'Pause' : 'Play'}
               >
