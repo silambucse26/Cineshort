@@ -25,36 +25,6 @@ import { extractYouTubeId } from '@/utils/youtubeUtils';
 import { getDriveEmbedUrl, isSampleOrInvalidDriveUrl, getDriveDirectStreamUrl } from '@/utils/googleDriveUtils';
 import { getUploadedVideoObjectUrl } from '@/utils/indexedDbVideo';
 
-// Premium Timed Subtitle dialogue mapping helper (Dynamic based on film metadata)
-const getSubtitleText = (time: number, lang: 'en' | 'es', title?: string, overview?: string): string => {
-  const filmName = title || 'CineShort Original';
-  const snippet = overview && overview.length > 10 ? overview.substring(0, 65) + '...' : 'In the quiet shadows of the city, secrets begin to unravel...';
-
-  const dialogue = [
-    { start: 0, end: 4, en: `[CineShort Cinema] Presenting "${filmName}"`, es: `[CineShort Cinema] Presentando "${filmName}"` },
-    { start: 4, end: 9, en: `"${snippet}"`, es: `"${snippet}"` },
-    { start: 9, end: 14, en: "[Dramatic cinematic score building]", es: "[Banda sonora dramática en aumento]" },
-    { start: 14, end: 19, en: "We have to find out the truth before sunrise.", es: "Tenemos que descubrir la verdad antes del amanecer." },
-    { start: 19, end: 24, en: "[Suspenseful tension rising]", es: "[Tensión y suspenso en aumento]" },
-    { start: 24, end: 30, en: "Every choice has a story. Watch closely.", es: "Cada elección tiene una historia. Mira con atención." }
-  ];
-  
-  const matched = dialogue.find(d => time >= d.start && time < d.end);
-  if (matched) {
-    return lang === 'es' ? matched.es : matched.en;
-  }
-  
-  if (time >= 30) {
-    const modTime = time % 30;
-    const matchedLoop = dialogue.find(d => modTime >= d.start && modTime < d.end);
-    if (matchedLoop) {
-      return lang === 'es' ? matchedLoop.es : matchedLoop.en;
-    }
-  }
-  
-  return "";
-};
-
 declare global {
   interface Window {
     YT: any;
@@ -164,11 +134,8 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
 
   // Dropdown States
   const [showQualityDropdown, setShowQualityDropdown] = useState(false);
-  const [showSubtitleDropdown, setShowSubtitleDropdown] = useState(false);
-  const [activeSubtitle, setActiveSubtitle] = useState<'off' | 'en' | 'es'>('off');
 
   const qualityRef = useRef<HTMLDivElement>(null);
-  const subtitleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -783,14 +750,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
           </button>
         )}
 
-        {/* Subtitles Overlay */}
-        {activeSubtitle !== 'off' && (
-          <div className="absolute bottom-16 sm:bottom-20 left-1/2 transform -translate-x-1/2 z-30 max-w-[85%] text-center pointer-events-none">
-            <span className="bg-black/85 text-white font-bold text-xs sm:text-sm px-3.5 py-1.5 rounded-lg border border-[#FFD60A]/30 backdrop-blur-md shadow-md leading-relaxed inline-block">
-              {getSubtitleText(currentTime, activeSubtitle, title, overview)}
-            </span>
-          </div>
-        )}
 
         {/* Live Chat Overlay (Fullscreen only) */}
         {isFullscreen && chatMessages && chatMessages.length > 0 && (
