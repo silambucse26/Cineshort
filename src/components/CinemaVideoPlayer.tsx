@@ -870,7 +870,6 @@ export const CinemaVideoPlayer: React.FC<CinemaVideoPlayerProps> = ({
                 <button
                   onClick={() => {
                     setShowQualityDropdown(!showQualityDropdown);
-                    setShowSubtitleDropdown(false);
                   }}
                   className={`p-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 border transition-all ${
                     showQualityDropdown
