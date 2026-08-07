@@ -48,6 +48,7 @@ interface CinemaVideoPlayerProps {
   chatMessages?: any[];
   onPlayStateChange?: (isPlaying: boolean, currentTime: number) => void;
   forcePlayState?: { isPlaying: boolean; timestamp: number } | null;
+  onFilmComplete?: () => void;
 }
 
 const SAMPLE_FALLBACK_VIDEO = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4';

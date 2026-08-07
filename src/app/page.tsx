@@ -152,73 +152,76 @@ function HomeFeedContent() {
         </button>
       </div>
 
-      {/* 1A. MOBILE NETFLIX-STYLE VERTICAL HERO CARD (Visible on Mobile/Tablet) */}
+      {/* 1A. MOBILE SPOTLIGHT HERO BANNER (Matching Screenshot 1) */}
       {featuredFilm && (
-        <section className="md:hidden px-4 py-2 mb-6">
-          <div className="relative aspect-[3/4] max-w-[340px] mx-auto rounded-[1.8rem] overflow-hidden border border-white/10 shadow-[0_16px_50px_rgba(0,0,0,0.9)] bg-[#0B0C10] group">
-            {/* Background Poster Image */}
+        <section className="md:hidden relative w-full mb-6 pt-2">
+          <div className="relative w-full aspect-[4/5] overflow-hidden rounded-3xl border border-white/10 shadow-[0_16px_50px_rgba(0,0,0,0.9)] bg-[#0B0C10] group">
+            {/* Background Hero Poster */}
             <img
               src={featuredFilm.thumbnail_url}
               alt={featuredFilm.title}
               className="w-full h-full object-cover object-center"
             />
 
-            {/* Bottom Immersive Gradient Mask */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent z-10 flex flex-col justify-end p-5 text-center">
-              {/* Title & Underline effect */}
-              <div className="space-y-1 mb-2">
-                <h1 className="text-2xl font-extrabold uppercase tracking-tight text-white drop-shadow-md">
-                  {featuredFilm.title}
-                </h1>
-                <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-[#E50914] to-transparent mx-auto" />
-                <p className="text-[11px] text-[#FFD60A] font-semibold tracking-wide">
-                  New episode coming on Sunday
-                </p>
+            {/* Dark Mask Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0B0C10]/60 via-transparent to-transparent" />
+
+            {/* Bottom Content Area */}
+            <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col items-start gap-2.5 z-20">
+              {/* FEATURED SPOTLIGHT Pill Badge */}
+              <span className="bg-[#FFD60A] text-[#0B0C10] font-black text-[9px] uppercase tracking-widest px-3 py-1 rounded-md shadow-md">
+                FEATURED SPOTLIGHT
+              </span>
+
+              {/* Film Title */}
+              <h1 className="text-2xl font-black uppercase tracking-tight text-white drop-shadow-lg leading-tight">
+                {featuredFilm.title}
+              </h1>
+
+              {/* Subtitle Tags Line: mood · duration · rating */}
+              <div className="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5 drop-shadow">
+                <span className="capitalize">{featuredFilm.mood_tag}</span>
+                <span>·</span>
+                <span>{Math.floor(featuredFilm.duration_sec / 60)}M {featuredFilm.duration_sec % 60}s</span>
+                <span>·</span>
+                <span className="text-[#FFD60A] font-bold flex items-center gap-0.5">
+                  ★ {featuredFilm.rating_avg.toFixed(1)} ({featuredFilm.rating_count})
+                </span>
               </div>
 
-              {/* Tag pill list */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5 text-[9px] font-medium text-gray-300 mb-4 px-2">
-                <span>Riveting</span>
-                <span>•</span>
-                <span>Drama</span>
-                <span>•</span>
-                <span>{featuredFilm.mood_tag.toUpperCase()}</span>
-                <span>•</span>
-                <span>Workplace</span>
-                <span>•</span>
-                <span>TV</span>
-              </div>
-
-              {/* Action Buttons: Play (White) and + My List (Grey) */}
-              <div className="flex items-center gap-3">
+              {/* Action Buttons Row: Play Now, Watch Party, Bookmark */}
+              <div className="w-full flex items-center gap-2.5 pt-1">
+                {/* Play Now (Yellow Pill) */}
                 <Link
                   href={`/film/${featuredFilm.id}`}
-                  className="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold text-xs py-2.5 px-4 rounded-md flex items-center justify-center gap-1.5 transition-transform active:scale-95 shadow-lg"
+                  className="flex-1 bg-[#FFD60A] hover:bg-[#ffe043] text-[#0B0C10] font-extrabold text-xs py-2.5 px-4 rounded-full flex items-center justify-center gap-1.5 transition-transform active:scale-95 shadow-[0_0_20px_rgba(255,214,10,0.4)]"
                 >
-                  <Play className="w-4 h-4 fill-current text-black" />
-                  <span>Play</span>
+                  <Play className="w-4 h-4 fill-current text-[#0B0C10]" />
+                  <span>Play Now</span>
                 </Link>
 
+                {/* Watch Party (Dark Brown/Gold Pill) */}
+                <Link
+                  href={`/watch-party?filmId=${featuredFilm.id}`}
+                  className="flex-1 bg-[#2A2315] hover:bg-[#382f1d] border border-[#FFD60A]/40 text-[#FFD60A] font-extrabold text-xs py-2.5 px-4 rounded-full flex items-center justify-center gap-1.5 transition-transform active:scale-95 shadow-md"
+                >
+                  <Users className="w-4 h-4 text-[#FFD60A]" />
+                  <span>Watch Party</span>
+                </Link>
+
+                {/* Bookmark Circle Button */}
                 <button
                   type="button"
                   onClick={() => toggleWishlist(featuredFilm.id)}
-                  className={`flex-1 font-extrabold text-xs py-2.5 px-4 rounded-md flex items-center justify-center gap-1.5 border transition-all active:scale-95 shadow-lg backdrop-blur-md ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all active:scale-95 backdrop-blur-md shrink-0 ${
                     isInWishlist(featuredFilm.id)
-                      ? 'bg-red-600/90 border-red-400 text-white shadow-[0_0_12px_rgba(239,68,68,0.5)]'
-                      : 'bg-white/20 hover:bg-white/30 border-white/20 text-white'
+                      ? 'bg-red-600 text-white border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)]'
+                      : 'bg-[#2A2315] border-[#FFD60A]/40 text-[#FFD60A]'
                   }`}
+                  title={isInWishlist(featuredFilm.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 >
-                  {isInWishlist(featuredFilm.id) ? (
-                    <>
-                      <Check className="w-4 h-4 text-white" />
-                      <span>Wishlisted</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 text-white" />
-                      <span>My List</span>
-                    </>
-                  )}
+                  <Bookmark className={`w-4 h-4 ${isInWishlist(featuredFilm.id) ? 'fill-current' : ''}`} />
                 </button>
               </div>
             </div>
@@ -330,6 +333,28 @@ function HomeFeedContent() {
         </section>
       )}
 
+
+      {/* 1C. MOBILE EXPLORE MOODS & GENRES HORIZONTAL CHIPS (Matching Screenshot 1) */}
+      <section className="md:hidden px-4 mb-6">
+        <h2 className="text-sm font-black uppercase text-white tracking-wider mb-2.5">
+          Explore Moods & Genres
+        </h2>
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          {moodChips.map((chip) => (
+            <button
+              key={chip.value}
+              onClick={() => setSelectedMood(chip.value)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 border ${
+                selectedMood === chip.value
+                  ? 'bg-[#FFD60A] text-[#0B0C10] border-[#FFD60A] font-black shadow-md'
+                  : 'bg-[#1F2833]/60 text-gray-300 border-white/10 hover:border-white/30'
+              }`}
+            >
+              <span>{chip.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* 3. MAIN FEED AND CAROUSELS */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">

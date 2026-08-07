@@ -26,6 +26,7 @@ import {
   Users
 } from 'lucide-react';
 import { CinemaVideoPlayer } from '@/components/CinemaVideoPlayer';
+import { MovieJudgeInsightModal } from '@/components/MovieJudgeInsightModal';
 import { useShortFilm } from '../../../context/ShortFilmContext';
 import { FilmCard } from '../../../components/FilmCard';
 import { formatDuration } from '../../../services/driveService';
@@ -68,6 +69,7 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
   const [useFallbackPlayer, setUseFallbackPlayer] = useState(false);
   const [qualityMode, setQualityMode] = useState<'1080p' | '4K' | '720p'>('1080p');
   const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
 
   if (!film) {
     return (
@@ -164,6 +166,7 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
             durationSec={film.duration_sec}
             isTheaterMode={isTheaterMode}
             onToggleTheater={() => setIsTheaterMode(!isTheaterMode)}
+            onFilmComplete={() => setIsJudgeModalOpen(true)}
           />
         ) : (
           <div className="card-flat overflow-hidden border-2 border-[#FFD60A]/40 shadow-[0_0_30px_rgba(255,214,10,0.15)] relative rounded-2xl aspect-video bg-black flex items-center justify-center group">
@@ -244,6 +247,15 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
               >
                 <Bookmark className={`w-4 h-4 ${isInWishlist(film.id) ? 'fill-current' : 'text-[#FFD60A]'}`} />
                 <span>{isInWishlist(film.id) ? 'Wishlisted' : 'Wishlist'}</span>
+              </button>
+
+              <button
+                onClick={() => setIsJudgeModalOpen(true)}
+                className="bg-[#2A2315] hover:bg-[#382f1d] border border-[#FFD60A]/50 text-[#FFD60A] px-3.5 py-2 rounded-lg text-xs font-black flex items-center gap-1.5 transition-transform active:scale-95 shadow-md"
+                title="Score this movie as a Jury Judge and generate AI Insights"
+              >
+                <Award className="w-4 h-4 text-[#FFD60A]" />
+                <span>Judge & AI Insights</span>
               </button>
 
               <Link
@@ -417,6 +429,13 @@ export default function FilmPlayerPage({ params }: { params: Promise<{ id: strin
           </div>
         )}
       </div>
+
+      {/* Movie Completion & Jury Judge AI Insight Suite Modal */}
+      <MovieJudgeInsightModal
+        film={film}
+        isOpen={isJudgeModalOpen}
+        onClose={() => setIsJudgeModalOpen(false)}
+      />
     </div>
   );
 }

@@ -333,7 +333,7 @@ export const Header: React.FC = () => {
 
       {/* 2. MOBILE BOTTOM NAVIGATION BAR (md:hidden) */}
       <nav 
-        className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0B0C10]/95 border-t border-white/10 flex justify-around items-center z-50 px-2 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.8)] select-none"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0B0C10]/95 border-t border-white/10 flex justify-around items-center z-50 px-2 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.9)] select-none"
       >
         {/* 1. Mobile Home */}
         <Link
@@ -357,12 +357,15 @@ export const Header: React.FC = () => {
           <span className="text-[9px] font-bold tracking-wider">Vault</span>
         </Link>
 
-        {/* 3. Mobile Center Brand Logo (CineShort Application Logo) */}
+        {/* 3. Mobile Center HIGHLIGHTED Watch Together Button (Matching Screenshot 2) */}
         <Link
-          href="/"
-          className="flex flex-col items-center justify-center py-1 px-2.5 hover:scale-110 active:scale-95 transition-transform"
+          href="/watch-party"
+          className="relative -top-2 flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-tr from-[#F4A300] to-[#FFD60A] text-[#0B0C10] shadow-[0_0_20px_rgba(255,214,10,0.6)] hover:scale-110 active:scale-95 transition-all duration-200 border border-amber-300"
+          title="Watch Together Room"
         >
-          <CineShortLogo className="w-9 h-9" />
+          <div className="w-5 h-5 rounded-md bg-[#0B0C10] flex items-center justify-center">
+            <Users className="w-3.5 h-3.5 text-[#FFD60A]" />
+          </div>
         </Link>
 
         {/* 4. Mobile Search Trigger */}
@@ -395,36 +398,28 @@ export const Header: React.FC = () => {
 
       {/* 2a. MOBILE TOP LOGO BAR (md:hidden) */}
       <header 
-        className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0B0C10]/95 flex items-center justify-between px-4 z-40 backdrop-blur-md shadow-md"
+        className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0B0C10]/95 flex items-center justify-between px-3 z-40 backdrop-blur-md border-b border-white/5 shadow-md"
       >
-        <Link href="/" className="flex items-center gap-2 group">
-          <CineShortLogo className="w-8 h-8 group-hover:scale-105 transition-transform" />
+        <Link href="/" className="flex items-center gap-1.5 group shrink-0">
+          <CineShortLogo className="w-7 h-7 group-hover:scale-105 transition-transform" />
           <span className="text-xs font-black tracking-wider text-[#F5F5F5] uppercase">
             CINE<span className="text-[#FFD60A]">SHORT</span>
           </span>
         </Link>
 
-        <div className="flex items-center gap-3">
-          <button 
+        {/* Search Bar Input & 4K Shorts Badge (Matching Screenshot 1) */}
+        <div className="flex items-center gap-2 flex-1 justify-end ml-2">
+          <button
             onClick={() => setIsSearchOpen(true)}
-            className="p-1.5 text-gray-300 hover:text-[#FFD60A] active:scale-95 transition-all"
-            aria-label="Search short films"
+            className="flex-1 max-w-[170px] bg-[#1F2833]/80 border border-white/10 rounded-full px-3 py-1 flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
           >
-            <Search className="w-5 h-5" />
+            <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            <span className="truncate text-[10px]">Search shorts...</span>
           </button>
 
-          {/* Profile Avatar Trigger */}
-          <button
-            onClick={handleProfileClick}
-            className="w-8 h-8 rounded-lg bg-[#FFD60A]/10 flex items-center justify-center overflow-hidden border border-[#FFD60A]/40 shadow-md active:scale-95 transition-transform relative"
-            aria-label="Profile Menu"
-          >
-            <img
-              src={activePersona.avatar}
-              alt={activePersona.name}
-              className="w-full h-full object-cover"
-            />
-          </button>
+          <span className="bg-[#2A2315] border border-[#FFD60A]/40 text-[#FFD60A] font-black text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 shadow-sm">
+            4K SHORTS
+          </span>
         </div>
       </header>
 
