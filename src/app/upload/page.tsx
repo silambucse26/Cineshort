@@ -346,6 +346,36 @@ export default function UploadFlowPage() {
           </div>
         </div>
 
+        {/* Recommended Aspect Ratio Guidance Card */}
+        <div className="bg-[#1F2833]/50 border border-white/10 rounded-2xl p-4 space-y-2 text-xs">
+          <div className="flex items-center gap-1.5 text-[#FFD60A] font-extrabold uppercase text-[11px] tracking-wider">
+            <ImageIcon className="w-4 h-4 text-[#FFD60A]" />
+            <span>Recommended Aspect Ratios for Uploads</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+            <div className="bg-[#0B0C10] p-2 rounded-lg border border-white/5">
+              <span className="font-bold text-gray-200 block">🍿 Netflix Card Poster</span>
+              <span className="text-[#FFD60A] font-black">2:3 Vertical Ratio</span>
+              <span className="text-gray-400 block text-[9px]">600 × 900px</span>
+            </div>
+            <div className="bg-[#0B0C10] p-2 rounded-lg border border-white/5">
+              <span className="font-bold text-gray-200 block">🎬 Desktop Hero Banner</span>
+              <span className="text-[#FFD60A] font-black">16:9 Widescreen</span>
+              <span className="text-gray-400 block text-[9px]">1920 × 1080px</span>
+            </div>
+            <div className="bg-[#0B0C10] p-2 rounded-lg border border-white/5">
+              <span className="font-bold text-gray-200 block">📱 Mobile Hero Banner</span>
+              <span className="text-[#FFD60A] font-black">3:4 Vertical Ratio</span>
+              <span className="text-gray-400 block text-[9px]">1080 × 1440px</span>
+            </div>
+            <div className="bg-[#0B0C10] p-2 rounded-lg border border-white/5">
+              <span className="font-bold text-gray-200 block">🎥 Short Video File</span>
+              <span className="text-[#FFD60A] font-black">16:9 HD Video</span>
+              <span className="text-gray-400 block text-[9px]">1080p / 4K</span>
+            </div>
+          </div>
+        </div>
+
         {/* Step 1: Select Upload Source */}
         {currentStep === 1 && (
           <div className="space-y-6">

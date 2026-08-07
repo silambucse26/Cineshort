@@ -90,6 +90,7 @@ interface ShortFilmContextType {
   addHero: (hero: Omit<Hero, 'id'>) => Hero;
   deleteComment: (commentId: string) => void;
   toggleFlagComment: (commentId: string) => void;
+  setFeaturedFilm: (filmId: string, heroBannerUrl?: string) => void;
   loginAdmin: (email: string, pass: string) => boolean;
   logoutAdmin: () => void;
 
@@ -755,6 +756,22 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, is_flagged: !c.is_flagged } : c)));
   };
 
+  const setFeaturedFilm = (filmId: string, heroBannerUrl?: string) => {
+    setFilms((prev) =>
+      prev.map((f) => {
+        if (f.id === filmId) {
+          return {
+            ...f,
+            is_featured: true,
+            hero_banner_url: heroBannerUrl !== undefined ? heroBannerUrl : f.hero_banner_url,
+          };
+        } else {
+          return { ...f, is_featured: false };
+        }
+      })
+    );
+  };
+
   const loginUser = (persona: UserPersona, role: 'admin' | 'user') => {
     setActivePersona(persona);
     setIsAdminAuthenticated(role === 'admin');
@@ -1056,6 +1073,7 @@ export const ShortFilmProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addHero,
         deleteComment,
         toggleFlagComment,
+        setFeaturedFilm,
         loginAdmin,
         logoutAdmin,
         getFilmById,

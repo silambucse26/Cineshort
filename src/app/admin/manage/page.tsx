@@ -32,7 +32,8 @@ export default function AdminManageContentPage() {
     deleteDirector, 
     deleteHero, 
     addDirector, 
-    addHero 
+    addHero,
+    setFeaturedFilm
   } = useShortFilm();
 
   const [activeTab, setActiveTab] = useState<'films' | 'directors' | 'heroes'>('films');
@@ -259,10 +260,91 @@ export default function AdminManageContentPage() {
 
       {/* FILMS TAB CATALOG */}
       {activeTab === 'films' && (
-        <div className="card-flat p-6 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#0B0C10] text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-800">
+        <div className="space-y-6">
+          {/* 1. ADMIN HERO SPOTLIGHT SELECTOR & BANNER MODULE */}
+          <div className="card-flat p-5 border border-[#FFD60A]/40 bg-[#1F2833]/60 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div>
+                <span className="text-[10px] font-black uppercase text-[#FFD60A] tracking-wider block">
+                  🌟 Homepage Spotlight Configuration
+                </span>
+                <h3 className="font-extrabold text-base text-white">Select Featured Film for Hero Section</h3>
+              </div>
+              <span className="bg-[#FFD60A]/10 border border-[#FFD60A]/40 text-[#FFD60A] text-xs font-bold px-3 py-1 rounded-full">
+                Active Featured: {films.find((f) => f.is_featured)?.title || films[0]?.title || 'None'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block font-bold text-gray-300 mb-1">Choose Short Film to Feature:</label>
+                <select
+                  value={films.find((f) => f.is_featured)?.id || films[0]?.id || ''}
+                  onChange={(e) => setFeaturedFilm(e.target.value)}
+                  className="w-full bg-[#0B0C10] border border-white/10 rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-[#FFD60A]"
+                >
+                  {films
+                    .filter((f) => f.status === 'approved')
+                    .map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.title} ({f.director_name} - {f.mood_tag})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-300 mb-1">Optional Hero Banner Image URL (High Res):</label>
+                <input
+                  type="text"
+                  placeholder="https://images.unsplash.com/... (Leave blank to use film thumbnail)"
+                  value={films.find((f) => f.is_featured)?.hero_banner_url || ''}
+                  onChange={(e) => {
+                    const currentId = films.find((f) => f.is_featured)?.id || films[0]?.id;
+                    if (currentId) setFeaturedFilm(currentId, e.target.value);
+                  }}
+                  className="w-full bg-[#0B0C10] border border-white/10 rounded-xl p-2.5 text-white font-medium focus:outline-none focus:border-[#FFD60A]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 2. ASPECT RATIO SPECIFICATIONS GUIDANCE CARD */}
+          <div className="bg-[#0B0C10] p-4 rounded-xl border border-white/10 space-y-2">
+            <h4 className="text-xs font-black text-[#FFD60A] uppercase tracking-wider flex items-center gap-1.5">
+              <ImageIcon className="w-4 h-4 text-[#FFD60A]" /> Official Responsive Image Aspect Ratio Specifications
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[11px] pt-1">
+              <div className="bg-[#1F2833]/50 p-2.5 rounded-lg border border-white/5">
+                <span className="font-bold text-white block">🎬 Desktop Hero Banner</span>
+                <span className="text-[#FFD60A] font-black">16:9 Widescreen</span>
+                <span className="text-gray-400 block text-[10px]">1920 × 1080px or 1280 × 720px</span>
+              </div>
+
+              <div className="bg-[#1F2833]/50 p-2.5 rounded-lg border border-white/5">
+                <span className="font-bold text-white block">📱 Mobile Hero Banner</span>
+                <span className="text-[#FFD60A] font-black">3:4 or 4:5 Vertical</span>
+                <span className="text-gray-400 block text-[10px]">1080 × 1440px or 750 × 1000px</span>
+              </div>
+
+              <div className="bg-[#1F2833]/50 p-2.5 rounded-lg border border-white/5">
+                <span className="font-bold text-white block">🍿 Movie Card Poster</span>
+                <span className="text-[#FFD60A] font-black">2:3 Vertical Poster</span>
+                <span className="text-gray-400 block text-[10px]">600 × 900px or 800 × 1200px</span>
+              </div>
+
+              <div className="bg-[#1F2833]/50 p-2.5 rounded-lg border border-white/5">
+                <span className="font-bold text-white block">🎥 Trailer & Video</span>
+                <span className="text-[#FFD60A] font-black">16:9 Standard</span>
+                <span className="text-gray-400 block text-[10px]">1920 × 1080px</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-flat p-6 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#0B0C10] text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-800">
                 <tr>
                   <th className="p-3">Film Details</th>
                   <th className="p-3">Director</th>
@@ -318,6 +400,7 @@ export default function AdminManageContentPage() {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
 

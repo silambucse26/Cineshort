@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { useShortFilm } from '../context/ShortFilmContext';
 import { FilmCard } from '../components/FilmCard';
-import { MoodTag, DurationFilter } from '../types/shortfilm';
+import { MoodTag, DurationFilter, SortOption } from '../types/shortfilm';
 
 function HomeFeedContent() {
   const searchParams = useSearchParams();
@@ -35,6 +35,7 @@ function HomeFeedContent() {
 
   const [selectedMood, setSelectedMood] = useState<MoodTag | 'all'>('all');
   const [selectedDuration, setSelectedDuration] = useState<DurationFilter>('all');
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'series' | 'movies'>(
     typeParam === 'series' ? 'series' : typeParam === 'movies' ? 'movies' : 'all'
@@ -54,9 +55,17 @@ function HomeFeedContent() {
     { label: 'Under 1 min', value: 'under-1' },
     { label: '1 - 3 min', value: '1-3' },
     { label: '3 - 5 min', value: '3-5' },
+    { label: '5+ min', value: '5-plus' },
   ];
 
-  // Filter ONLY approved films by Mood Tag, Duration Range, & Type Tab
+  const sortOptionsList: { label: string; value: SortOption; icon: string }[] = [
+    { label: 'Newest Releases', value: 'newest', icon: '🕒' },
+    { label: 'Trending & Popular', value: 'trending', icon: '🔥' },
+    { label: 'Shortest First', value: 'duration-asc', icon: '⏱️' },
+    { label: 'Longest First', value: 'duration-desc', icon: '⏳' },
+  ];
+
+  // Filter ONLY approved films by Mood Tag, Duration Range, & Type Tab, then sort
   const filteredFilms = approvedFilms.filter((film) => {
     if (activeTab === 'series' && film.duration_sec <= 120) return false;
     if (activeTab === 'movies' && film.duration_sec > 180) return false;
@@ -67,8 +76,23 @@ function HomeFeedContent() {
     if (selectedDuration === 'under-1' && film.duration_sec >= 60) return false;
     if (selectedDuration === '1-3' && (film.duration_sec < 60 || film.duration_sec > 180)) return false;
     if (selectedDuration === '3-5' && (film.duration_sec < 180 || film.duration_sec > 300)) return false;
+    if (selectedDuration === '5-plus' && film.duration_sec <= 300) return false;
 
     return true;
+  }).sort((a, b) => {
+    if (sortOption === 'newest') {
+      return new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime();
+    }
+    if (sortOption === 'trending') {
+      return b.rating_avg - a.rating_avg;
+    }
+    if (sortOption === 'duration-asc') {
+      return a.duration_sec - b.duration_sec;
+    }
+    if (sortOption === 'duration-desc') {
+      return b.duration_sec - a.duration_sec;
+    }
+    return 0;
   });
 
   // Category splits
@@ -90,7 +114,8 @@ function HomeFeedContent() {
     .sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime())
     .slice(0, 8);
 
-  const featuredFilm = approvedFilms[0];
+  const featuredFilm = approvedFilms.find((f) => f.is_featured) || approvedFilms[0];
+  const heroImage = featuredFilm?.hero_banner_url || featuredFilm?.thumbnail_url;
   const rankedDirectors = [...directors].sort((a, b) => b.avg_rating - a.avg_rating);
   const topDirector = rankedDirectors[0];
 
@@ -158,7 +183,7 @@ function HomeFeedContent() {
           <div className="relative w-full aspect-[4/5] overflow-hidden rounded-3xl border border-white/10 shadow-[0_16px_50px_rgba(0,0,0,0.9)] bg-[#0B0C10] group">
             {/* Background Hero Poster */}
             <img
-              src={featuredFilm.thumbnail_url}
+              src={heroImage}
               alt={featuredFilm.title}
               className="w-full h-full object-cover object-center"
             />
@@ -234,7 +259,7 @@ function HomeFeedContent() {
         <section className="hidden md:flex relative w-full min-h-[55vh] sm:min-h-[70vh] items-center justify-center overflow-hidden mb-12 border-b border-gray-900 shadow-2xl">
           <div className="absolute inset-0 z-0">
             <img
-              src={featuredFilm.thumbnail_url}
+              src={heroImage}
               alt={featuredFilm.title}
               className="w-full h-full object-cover opacity-35 scale-105 transition-transform duration-[10s]"
             />
@@ -417,6 +442,29 @@ function HomeFeedContent() {
                   }`}
                 >
                   {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time-Based Sorting Controls */}
+          <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-3 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest shrink-0 flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5 text-[#FFD60A]" /> Sort Shorts By:
+            </span>
+            <div className="flex items-center gap-2">
+              {sortOptionsList.map((sortOpt) => (
+                <button
+                  key={sortOpt.value}
+                  onClick={() => setSortOption(sortOpt.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 border flex items-center gap-1.5 ${
+                    sortOption === sortOpt.value
+                      ? 'bg-[#2A2315] text-[#FFD60A] border-[#FFD60A] font-black shadow'
+                      : 'bg-[#0B0C10] text-gray-400 border-white/5 hover:text-white'
+                  }`}
+                >
+                  <span>{sortOpt.icon}</span>
+                  <span>{sortOpt.label}</span>
                 </button>
               ))}
             </div>
